@@ -31,7 +31,7 @@ $aliases['en'] = array(
  
 $messages['en'] = array(
         'useradmin' => 'User Administration',
-        'useradmin-desc' => 'User administration: add/delete users, change password, change user name/email, email reset password/welcome message, etc',
+        'useradmin-desc' => 'UserAdmin is a MediaWiki extension which allows administrators to add and delete users (e.g. spam or unused accounts), change user passwords, edit user details (e.g. username, real name or email), edit user groups, resend emails (e.g. reset password email or welcome message email).',
         'adduser' => 'Add user',
         'adduser_desc' => 'Create a new user',
         'deleteuser' => 'Delete user',

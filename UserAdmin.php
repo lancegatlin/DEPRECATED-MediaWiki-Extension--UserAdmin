@@ -31,7 +31,7 @@ EOT;
 $wgExtensionCredits['specialpage'][] = array(
         'name' => 'User Administration',
         'author' => 'Lance Gatlin',
-        'url' => 'http://www.mediawiki.org/wiki/Extension:MyExtension',
+        'url' => 'http://www.mediawiki.org/w/index.php?title=Extension:UserAdmin',
         'descriptionmsg' => 'useradmin-desc',
         'version' => '0.5.0',
 );
