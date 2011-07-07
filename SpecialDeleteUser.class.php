@@ -37,7 +37,6 @@ class SpecialDeleteUser extends SpecialUADMBase {
   function getParamsGET()
   {
     return array(
-      'action' => '',
       'userid' => '',
       'username' => '',
       'userids' => array(),
@@ -151,6 +150,8 @@ class SpecialDeleteUser extends SpecialUADMBase {
   
   function doGET()
   {
+    global $wgUser;
+    
     $users = $this->validateGETParams();
 
     $returnToHTML = '';
@@ -179,10 +180,13 @@ EOT;
     $groupsfieldHTML = $this->groupsfield;
     $lastEditDatefieldHTML = $this->lasteditdatefield;
 
-    
+    $editToken = $wgUser->editToken('deleteuser' . $wgUser->getName());
+
     return <<<EOT
 <h2 class="visualClear">$this->confirmdeletewarningmsg</h2>
 <form name="input" action="$this->mURL" method="post" class="visualClear">
+  <input type="hidden" name="edittoken" value="$editToken"/>
+  <input type="hidden" name="returnto" value="$this->returnto"/>
 <table>
     <tr>
         <th></th>
@@ -269,6 +273,11 @@ EOT;
    */
   function validatePOSTParams()
   {
+    global $wgUser;
+    
+    if(!$wgUser->matchEditToken($this->edittoken, 'deleteuser' . $wgUser->getName()))
+      throw new InvalidPOSTParamException(wfMsg('uadm-formsubmissionerrormsg'));
+    
     if(!empty($this->returnto))
     {
       $title = Title::newFromText($this->returnto);
@@ -351,7 +360,7 @@ EOT;
   {
     global $wgVersion;
     
-    switch($action)
+    switch($this->action)
     {
       default :
         throw new InvalidPOSTParamException(wfMsg('uadm-formsubmissionerrormsg'));
@@ -374,16 +383,16 @@ EOT;
     switch($versionMinor)
     {
       case 16 :
-        $deleteUser = $this->deleteUserVersion1_16;
+        $deleteUser = 'deleteUserVersion1_16';
         break;
       default:
   			return $this->getPOSTRedirectURL( false, wfMsg( 'uadm-unsupportedversionmsg', $abortError) );
     }
     
     foreach($users as $user)
-      $deleteUser($user);
+      $this->$deleteUser($user);
     
-    return $this->getPOSTRedirectURL(true, wfMsg('uadm-deletesuccessmsg'));
+    return $this->getURLWithStatus (array('returnto' => $this->returnto), true, wfMsg('uadm-deletesuccessmsg'));
   }
   
   function deleteUserVersion1_16($user)
@@ -393,63 +402,89 @@ EOT;
     $dbr = wfGetDB(DB_SLAVE);
     
     # Purge user
-    $dbr->delete('user',"user_id='$id'");
+    # lance.gatlin@gmail.com: tested good 9Jul11
+    $dbr->delete('user',array('user_id' => $id));
     
     # Purge properties for this user
-    $dbr->delete('user_properties',"up_user='$id'");
+    # lance.gatlin@gmail.com: tested good 9Jul11
+    $dbr->delete('user_properties',array('up_user' => $id));
     
     # Purge any text belonging to deleted pages created by this user
-    $dbr->deleteJoin('text', 'archive','old_id', 'ar_text_id', "ar_user='$id'");
-
+    # lance.gatlin@gmail.com: tested good 9Jul11
+    $dbr->deleteJoin('text', 'archive','old_id', 'ar_text_id', array('ar_user'=> $id));
     # Purge any deleted pages created by this user
-    $dbr->delete('archive',"ar_user='$id'");
+    # lance.gatlin@gmail.com: tested good 9Jul11
+    $dbr->delete('archive',array('ar_user' => $id));
 
     # Purge any deleted images created by user
+    # lance.gatlin@gmail.com: tested good 9Jul11
     // TODO: delete images from file system
-    $dbr->delete('filearchive',"fa_user='$id'");
-    
+    $dbr->delete('filearchive',array('fa_user' => $id));
     # Zero id for any images deleted by user
-    $dbr->update('filearchive', array( 'fa_deleted_user' => 0),"fa_deleted_user='$id'");
+    # NOT TESTED
+    $dbr->update('filearchive', array( 'fa_deleted_user' => 0),array('fa_deleted_user' => $id));
     
+
     # Purge *all* old version of any images created by this user
     // TODO: delete images from file system
-    $dbr->deleteJoin('oldimage','image','oi_name','img_name',"img_user='$id'");
+    # lance.gatlin@gmail.com: tested good 9Jul11
+    $dbr->deleteJoin('oldimage','image','oi_name','img_name',array('img_user'=>$id));
+    # Purge old revisions uploaded by this user (user uploaded a new revision to someone else's file)
+    // TODO: delete images from file system
+    # NOT TESTED
+    $dbr->delete('oldimage',array('oi_user'=>$id));
 
     # Purge images created by user
     // TODO: delete images from file system
-    $usersImageCount = $dbr->estimateRowCount('image',"img_user='$id'");
-    $dbr->delete('image',"img_user='$id'");
+    # lance.gatlin@gmail.com: tested good 9Jul11
+    $usersImageCount = $dbr->estimateRowCount('image',array('img_user' => $id));
+    $dbr->delete('image',array('img_user' => $id));
     
-    # Zero id and set text to #deleted of any blocks on this user (preserve any specific IP blocks)
-    $dbr->update('ipblocks', array( 'ipb_user' => 0),"ipb_user='$id'");
+    # Zero id of any blocks on this user (preserve any specific IP blocks)
+    # lance.gatlin@gmail.com: tested good 9Jul11
+    $dbr->update('ipblocks', array( 'ipb_user' => 0),array('ipb_user' => $id));
     
-    # Zero id and set text to #deleted for any log entries for this user
-    $dbr->update('logging', array( 'log_user' => 0, 'log_user_text' => '#deleted'),"log_user='$id'");
+    # Zero id for any log entries for this user
+    # lance.gatlin@gmail.com: tested good 9Jul11
+    $dbr->update('logging', array( 'log_user' => 0),array('log_user' => $id));
         
     # Purge any recent change entries for this user
-    $dbr->delete('recentchanges',"rc_user='$id'");
+    # lance.gatlin@gmail.com: tested good 9Jul11
+    $dbr->delete('recentchanges',array('rc_user' => $id));
     
     # Purge any text belonging to revisions created by this user
-    $dbr->deleteJoin('text', 'revision','old_id', 'rev_text_id', "rev_user='$id'");
+    # lance.gatlin@gmail.com: tested good 9Jul11
+    $dbr->deleteJoin('text', 'revision','old_id', 'rev_text_id', array('rev_user' => $id));
     
     # Purge any revisions created by this user
-    $usersEditCount = $dbr->estimateRowCount('revision',"rev_user='$id'");
-    $dbr->delete('revision',"rev_user='$id'");
+    $usersEditCount = $dbr->estimateRowCount('revision',array('rev_user' => $id));
+    // TODO: rev_parent_id fix
+    # lance.gatlin@gmail.com: tested good 9Jul11
+    $dbr->delete('revision',array('rev_user' => $id));
     
-    # Purge any pages that now have no revisions
+    # Purge any pages that now have no revisions (and clear cache for them)
+    $usersPageCount = 0;
+    //TODO
+    //$dbr->deleteJoin('page','revision','page_id','rev_page',array('count(rev_page)' => 0));
     
+    # Purge user page, dump cache and all revisions to it
+      
     # Purge any newtalk entries for this user
-    $dbr->delete('user_newtalk',"user_id='$id'");
+    # lance.gatlin@gmail.com: tested good 9Jul11
+    $dbr->delete('user_newtalk',array('user_id'=>$id));
     
     # Purge any watchlist entries for this user
-    $dbr->delete('watchlist',"wl_user='$id'");
+    # lance.gatlin@gmail.com: tested good 9Jul11
+    $dbr->delete('watchlist',array('wl_user' => $id));
    
     # Lower site stats of users
-    $result = $dbr->select('sitestats','ss_total_edits,ss_total_pages,ss_users,ss_active_users,ss_images,ss_users');
+    # This appears to not be used?!? Zero rows in normal database...
+/*
+    $result = $dbr->select('site_stats','ss_total_edits,ss_total_pages,ss_users,ss_active_users,ss_images,ss_users');
     $a = $result->fetchRow();
     $userWasActive = $usersEditCount > 0 || $usersImageCount > 0;
     
-    $dbr->update('sitestats'
+    $dbr->update('site_stats'
                   ,array(  
                       'ss_total_edits' => $a['ss_total_edits'] - $usersEditCount,
                       'ss_total_pages'=> $a['ss_total_pages'] - $usersPageCount,
@@ -457,6 +492,9 @@ EOT;
                       'ss_active_users' => $userWasActive ? $a['ss_active_users'] - 1 : $a['ss_active_users'],
                       'ss_images' => $a['ss_images'] - $usersImageCount
                       )
+                  ,'*'
                 );
+
+*/
   }
 }
