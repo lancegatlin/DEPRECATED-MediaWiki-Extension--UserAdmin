@@ -143,5 +143,7 @@ $messages['en'] = array(
         'uadm-deleteauserlabel' => 'Delete a user:',
         'uadm-confirmdeletelabel' => 'Confirm Delete',
         'uadm-confirmdeletewarningmsg' => 'WARNING: All pages, revisions, and file uploads owned by the following users will also be deleted:',
-        'uadm-nodeleteadminmsg' => 'Deletion of administrator account $1 is disallowed.'
+        'uadm-nodeleteadminmsg' => 'Deletion of administrator account $1 is disallowed.',
+        'uadm-invalidversionmsg' => 'Delete user special page does not support this MediaWiki version.',
+        'uadm-deletesuccessmsg' => 'All requested users have been deleted.'
 );
