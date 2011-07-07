@@ -53,6 +53,7 @@ $messages['en'] = array(
         'uadm-emailauthdatefield' => 'Email Authenticated Date',
         'uadm-reasonfield' => 'Reason',
         'uadm-passwordfield' => 'Password',
+        'domainfield' => 'Domain',
     
         // Common actions
         'uadm-previousactionlabel' => 'Previous',
@@ -105,6 +106,9 @@ $messages['en'] = array(
         'uadm-invalidusernamemsg' => 'Invalid user name.',
         'uadm-invalidemailmsg' => 'Invalid email address.',
         'uadm-invalidpasswordmsg' => 'Invalid password.',
+        'uadm-invaliddomainmsg' => 'Invalid domain',
+        'uadm-mailerrormsg' => 'Mail failure: $1',
+        'uadm-externalupdateerrormsg' => 'External authentication plug-in update failed (wgAuth).',
     
         // Common log messages
         'uadm-emailwelcomelog' => 'sent welcome email with random password to [[$1]]',
@@ -133,6 +137,7 @@ $messages['en'] = array(
         'uadm-adduserlabel' => 'Add a user',
         'uadm-hookblocknewusermsg' => 'AbortNewAccount hook blocked account creation: $1',
         'uadm-wgauthaddfailmsg' => 'wgAuth addUser failed',
+        'uadm-createextacctfailmsg' => 'Account creation is not allowed by external authorization plug-in (wgAuth).',
     
         // Delete user specific
         'uadm-deleteauserlabel' => 'Delete a user:',

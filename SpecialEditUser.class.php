@@ -38,6 +38,7 @@ class SpecialEditUser extends SpecialUADMBase {
     return array(
       'userid' => '',
       'username' => '',
+      'domain' => 'local',
       'realname' => '',
       'groups' => array(),
       'pwdaction' => 'nochange',
@@ -61,6 +62,7 @@ class SpecialEditUser extends SpecialUADMBase {
       'action' => '',
       'userid' => '',
       'username' => '',
+      'domain' => 'local',
       'realname' => '',
       'email' => '',
       'groups' => array(),
@@ -123,7 +125,7 @@ class SpecialEditUser extends SpecialUADMBase {
    */
   function doGET() 
   {
-    global $wgLang, $wgOut, $wgUser;
+    global $wgLang, $wgOut, $wgUser, $wgAuth;
     
     $user = $this->validateGETParams();
     
@@ -151,7 +153,7 @@ EOT;
 
     $id = $user->getId();
     $this->userid = $id;
-    $this->params['userid'] = $id;
+    $this->mParams['userid'] = $id;
 
     // user editable parameters
     $userName = $user->getName();
@@ -221,12 +223,12 @@ EOT;
       $backHTML = $this->parse("[[$this->returnto|< $this->backactionlabel]] | ");
     }
     
-    $postURL = $this->getURL($this->params);
+    $postURL = $this->getURL($this->mParams);
     
     $editToken = $wgUser->editToken($this->userid);
 
-//    $previewPasswordEmailHref = $this->getURL(array('preview' => 'password') + $this->params);
-//    $previewWelcomeEmailHref = $this->getURL(array('preview' => 'welcome') + $this->params);
+//    $previewPasswordEmailHref = $this->getURL(array('preview' => 'password') + $this->mParams);
+//    $previewWelcomeEmailHref = $this->getURL(array('preview' => 'welcome') + $this->mParams);
     
     $previewPasswordEmailHTML = '';
     $previewWelcomeEmailHTML = '';
@@ -290,6 +292,21 @@ EOT;
     
     $wgOut->setSubtitle($subtitle);
     
+    # Hack to detect if domain is needed
+    $domainHTML = '';
+    $template = new UsercreateTemplate;
+    $temp = 'signup';
+    $wgAuth->modifyUITemplate(&$template, &$temp);
+    if(isset($template->data['usedomain']) && $template->data['usedomain'] == true)
+    {
+      $domainHTML = <<<EOT
+      <tr>
+        <td><label for="domain">$this->domainfield</label></td>
+        <td><input id="domain" type="text" name="domain" size="30" value="$this->domain"/><br/></td>
+      </tr>
+EOT;
+    }
+    
     return <<<EOT
 <form id="edituserform" name="input" action="$postURL" method="post" class="visualClear">
   <input type="hidden" name="edittoken" value="$editToken"/>
@@ -304,6 +321,7 @@ EOT;
         <td><label for="username">$this->usernamefield:</label></td>
         <td><input id="username" type="text" name="username" value="$userName" size="30"/> $this->requiredlabel<br/></td>
       </tr>
+$domainHTML
       <tr>
         <td><label for="realname">$this->realnamefield:</label></td>
         <td><input id="realname" type="text" name="realname" value="$realName" size="30"/><br/></td>
@@ -370,7 +388,7 @@ EOT;
    */
   function validatePOSTParams()
   {
-    global $wgUser;
+    global $wgUser, $wgAuth;
     
     $user = User::newFromId($this->userid);
     if(!$user->loadFromId())
@@ -389,6 +407,17 @@ EOT;
 
       if(!User::isCreatableName($this->username))
         throw new InvalidPOSTParamException(wfMsg('uadm-invalidusernamemsg',$this->usernamefield));
+
+      if($this->domain != 'local' && $this->domain != '')
+      {
+        if(!$wgAuth->validDomain($this->domain))
+          throw new InvalidPOSTParamException(wfMsg('uadm-invaliddomainmsg'));
+        
+        $wgAuth->setDomain($this->domain);
+        
+        if($wgAuth->userExists($this->username))
+          throw new InvalidPOSTParamException(wfMsg('uadm-usernameinusemsg', $this->username));
+      }
     }
     
 //    if(!$wgUser->matchEditToken(stripslashes($this->edittoken), $this->userid))
@@ -407,7 +436,7 @@ EOT;
     if(empty($this->pwdaction))
       throw new InvalidPOSTParamException(wfMsg('uadm-formsubmissionerrormsg'));
       
-    if($this->pwdaction == 'manual')
+    if($this->action == 'saveuser' && $this->pwdaction == 'manual')
     {
       if(empty($this->password1) || empty($this->password2))
         throw new InvalidPOSTParamException(wfMsg('uadm-fieldisrequiredmsg',$this->passwordfield));
@@ -430,16 +459,16 @@ EOT;
    */
   function doPOST()
   {
-    global $wgUser;
+    global $wgUser, $wgAuth;
 
     $user = $this->validatePOSTParams();
     
     switch($this->action)
     {
       case 'emailpwdpreview' :
-        return $this->getURL(array('preview' => 'password', 'pwdaction' => 'email') + $this->params);
+        return $this->getURL(array('preview' => 'password', 'pwdaction' => 'email') + $this->mParams);
       case 'emailwelcomepreview' :
-        return $this->getURL(array('preview' => 'welcome', 'pwdaction' => 'emailwelcome') + $this->params);
+        return $this->getURL(array('preview' => 'welcome', 'pwdaction' => 'emailwelcome') + $this->mParams);
       default :
         throw new InvalidPOSTParamException(wfMsg('uadm-formsubmissionerrormsg'));
       case 'saveuser' :
@@ -455,7 +484,7 @@ EOT;
     if($user->getName() != $this->username)
     {
       $oldName = $user->getName();
-      $user->setName($this->username);
+      $user->setName($wgAuth->getCanonicalName($this->username));
       $newName = $user->getName();
       
       $log->addEntry( 
@@ -539,7 +568,7 @@ EOT;
         $result = self::mailPassword($user);
 
         if( WikiError::isError( $result ) )
-          return $this->getPOSTRedirectURL(false, wfMsg( 'uadm-mailerror', $result->getMessage() ) );
+          return $this->getPOSTRedirectURL(false, wfMsg( 'uadm-mailerrormsg', $result->getMessage() ) );
 
         $changesMade = true;
         
@@ -557,7 +586,7 @@ EOT;
         $result = self::mailWelcomeAndPassword($user);
 
         if( WikiError::isError( $result ) )
-          return $this->getPOSTRedirectURL( false, wfMsg( 'uadm-mailerror', $result->getMessage() ) );
+          return $this->getPOSTRedirectURL( false, wfMsg( 'uadm-mailerrormsg', $result->getMessage() ) );
 
         $changesMade = true;
         
@@ -572,6 +601,15 @@ EOT;
         break;
     }
     
+    if($changesMade)
+    {
+      if(!$wgAuth->updateExternalDB($user))
+        return $this->getPOSTRedirectURL(false, wfMsg('uadm-externalupdateerrormsg'));
+      
+      $user->saveSettings();
+    }
+    
+    # Update groups if needed
     $user->loadGroups();
     $currentGroups = $user->getGroups();
     $remove = array();
@@ -591,11 +629,10 @@ EOT;
     {
       $userrightsPage = new UserrightsPage;    
       $userrightsPage->doSaveUserGroups($user, $add, $remove, $this->reason);
+      wfRunHooks( 'UserRights', array( $user, $add, $remove ) );
       $successWikiText[] = wfMsg('uadm-changestogroupsuccessmsg', $this->username);
     }
     
-    if($changesMade)
-      $user->saveSettings();
     
     $successWikiText = implode('<br/>', $successWikiText);
     

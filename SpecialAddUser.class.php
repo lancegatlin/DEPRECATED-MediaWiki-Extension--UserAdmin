@@ -40,6 +40,7 @@ class SpecialAddUser extends SpecialUADMBase {
       'username' => '',
       'realname' => '',
       'email' => '',
+      'domain' => 'local',
       'returnto' => $this->getDefaultReturnTo(),
       'preview' => '',
     );
@@ -57,6 +58,7 @@ class SpecialAddUser extends SpecialUADMBase {
     return array(
       'action' => '',
       'username' => '',
+      'domain' => 'local',
       'realname' => '',
       'email' => '',
       'groups' => array(),
@@ -88,7 +90,7 @@ class SpecialAddUser extends SpecialUADMBase {
    */
   function doGET() 
   {
-    global $wgLang, $wgOut, $wgUser;
+    global $wgLang, $wgOut, $wgUser, $wgAuth;
     
     $this->validateGETParams();
     
@@ -155,6 +157,21 @@ EOT;
       }
     }
     
+    # Hack to detect if domain is needed
+    $domainHTML = '';
+    $template = new UsercreateTemplate;
+    $temp = 'signup';
+    $wgAuth->modifyUITemplate(&$template, &$temp);
+    if(isset($template->data['usedomain']) && $template->data['usedomain'] == true)
+    {
+      $domainHTML = <<<EOT
+      <tr>
+        <td><label for="domain">$this->domainfield</label></td>
+        <td><input id="domain" type="text" name="domain" size="30" value="$this->domain"/><br/></td>
+      </tr>
+EOT;
+    }
+    
     return <<<EOT
 <form id="adduserform" name="input" action="$postURL" method="post" class="visualClear">
   <input type="hidden" name="edittoken" value="$editToken"/>
@@ -165,6 +182,7 @@ EOT;
         <td><label for="username">$this->usernamefield</label></td>
         <td><input id="username" type="text" name="username" size="30" value="$this->username"/> $this->requiredlabel<br/></td>
       </tr>
+$domainHTML
       <tr>
         <td><label for="realname">$this->realnamefield</label></td>
         <td><input id="realname" type="text" name="realname" size="30" value="$this->realname"/><br/></td>
@@ -206,7 +224,7 @@ EOT;
    */
   function validatePOSTParams()
   {
-    global $wgUser;
+    global $wgUser, $wgAuth;
     
     // Validate FORM 
     if(empty($this->username))
@@ -219,6 +237,17 @@ EOT;
     if(!User::isCreatableName($this->username))
       throw new InvalidPOSTParamException(wfMsg('uadm-invalidusernamemsg',$this->usernamefield));
     
+    if($this->domain != 'local' && $this->domain != '')
+    {
+      if(!$wgAuth->validDomain($this->domain))
+        throw new InvalidPOSTParamException(wfMsg('uadm-invaliddomainmsg'));
+      
+      $wgAuth->setDomain($this->domain);
+      
+      if($wgAuth->userExists($this->username))
+        throw new InvalidPOSTParamException(wfMsg('uadm-usernameinusemsg', $this->username));
+    }
+      
 //    if(!$wgUser->matchEditToken(stripslashes($this->edittoken), $this->userid))
     if(!$wgUser->matchEditToken($this->edittoken, 'adduser' . $wgUser->getName()))
       throw new InvalidPOSTParamException(wfMsg('uadm-formsubmissionerrormsg'));
@@ -243,6 +272,8 @@ EOT;
     }
     elseif($this->pwdaction != 'email' && $this->pwdaction != 'emailwelcome')
       throw new InvalidPOSTParamException(wfMsg('uadm-formsubmissionerrormsg'));
+
+              
   }
   
   /*
@@ -269,12 +300,18 @@ EOT;
     }
     
     $this->validatePOSTParams();
-
+    
+    if($this->domain != 'local' && $this->domain != '')
+    {
+      if(!$wgAuth->canCreateAccounts())
+        return $this->getPOSTRedirectURL(false, wfMsg('uadm-createextacctfailmsg'));
+    }
+    
     $logRights = new LogPage( 'rights' );
     
     $user = new User;
         
-    $user->setName($this->username);
+    $user->setName($wgAuth->getCanonicalName($this->username));
     $user->setRealName($this->realname);      
     $user->setEmail($this->email);
     
@@ -291,7 +328,6 @@ EOT;
 //            throw new InvalidPOSTParamException(wfMsg('uadm-invalidpasswordmsg'));
           
           $user->setPassword($this->password1);
-          
         }
         catch(PasswordError $pe)
         {
@@ -357,6 +393,7 @@ EOT;
     {
       $userrightsPage = new UserrightsPage;    
       $userrightsPage->doSaveUserGroups($user, $this->groups, array(), $this->newuserreasonmsg);
+      wfRunHooks( 'UserRights', array( $user, $add, $remove ) );
       $successWikiText[] = wfMsg('uadm-changestogroupsuccessmsg', $this->username);
     }
     

@@ -402,8 +402,6 @@ EOT;
             
     );
     
-    $user->setPassword($newPassword);
-    
     return array($subject, $body, $newPassword);
   }
 
