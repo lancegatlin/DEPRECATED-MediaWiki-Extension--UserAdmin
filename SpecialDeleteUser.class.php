@@ -267,7 +267,7 @@ EOT;
    * 
    * @return array of users requested for deletion
    */
-  function validateGETParams()
+  function validatePOSTParams()
   {
     if(!empty($this->returnto))
     {

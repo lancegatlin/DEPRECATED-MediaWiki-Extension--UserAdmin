@@ -131,8 +131,10 @@ $messages['en'] = array(
         // Add user specific
         'uadm-newusersuccessmsg' => 'Successfully created user <b>$1</b>.',
         'uadm-adduserlabel' => 'Add a user',
+        'uadm-hookblocknewusermsg' => 'AbortNewAccount hook blocked account creation: $1',
+        'uadm-wgauthaddfailmsg' => 'wgAuth addUser failed',
     
-        // Delet user specific
+        // Delete user specific
         'uadm-deleteauserlabel' => 'Delete a user:',
         'uadm-confirmdeletelabel' => 'Confirm Delete',
         'uadm-confirmdeletewarningmsg' => 'WARNING: All pages, revisions, and file uploads owned by the following users will also be deleted:',

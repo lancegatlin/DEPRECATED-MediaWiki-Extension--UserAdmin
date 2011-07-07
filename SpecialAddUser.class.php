@@ -194,7 +194,7 @@ EOT;
       <input id="pwdemailwelcome" type="radio" name="pwdaction" value="emailwelcome" $emailWelcomeChecked/> <label for="pwdemailwelcome">$this->emailwelcomelabel</label> <button type="submit" name="action" value="emailwelcomepreview">$this->previewactionlabel</button> (<a href="$welcomeTitleHref">$this->subjectlabel</a> | <a href="$welcomeTextHref">$this->bodylabel</a>)<br/>
       $previewWelcomeEmailHTML
     </fieldset>
-    <input type="submit" name="action" value="$this->adduserlabel"/>
+    <button type="submit" name="action" value="adduser">$this->adduserlabel</button>
   </fieldset>
 </form>
 $returnToHTML
@@ -222,7 +222,7 @@ EOT;
 //    if(!$wgUser->matchEditToken(stripslashes($this->edittoken), $this->userid))
     if(!$wgUser->matchEditToken($this->edittoken, 'adduser' . $wgUser->getName()))
       throw new InvalidPOSTParamException(wfMsg('uadm-formsubmissionerrormsg'));
-    
+
     if(empty($this->email))
       throw new InvalidPOSTParamException(wfMsg('uadm-fieldisrequiredmsg',$this->emailfield));
 
@@ -252,7 +252,7 @@ EOT;
    */
   function doPOST()
   {
-    global $wgUser;
+    global $wgUser, $wgAuth;
 
     switch($this->action)
     {
@@ -261,7 +261,9 @@ EOT;
       case 'emailwelcomepreview' :
         $this->pwdaction = 'emailwelcome';
         $this->validatePOSTParams();
-        return $this->getURL(array('preview' => 'welcome') + $this->mParams);
+        $newParams = array('preview' => 'welcome' ) + $this->mParams;
+        $newParams = array_intersect_key($newParams, $this->getParamsGET());
+        return $this->getURL($newParams);
       case 'adduser' :
         break;
     }
@@ -302,7 +304,7 @@ EOT;
           array(
           )
         );
-        $successWikiText[] = wfMsg('uadm-passwordchangesuccessmg',$this->username);
+        $successWikiText[] = wfMsg('uadm-passwordchangesuccessmsg',$this->username);
         break;
       
       case 'email' :
@@ -338,6 +340,16 @@ EOT;
         break;
     }
     
+    $user->setToken();
+    $wgAuth->initUser( $user, false);
+    
+    $abortError = '';
+		if( !wfRunHooks( 'AbortNewAccount', array( $user, &$abortError ) ) )
+			return $this->getPOSTRedirectURL( false, wfMsg( 'uadm-hookblocknewusermsg', $abortError) );
+		
+    if(!$wgAuth->addUser( $user, $this->password1, $this->email, $this->realname ) )
+			return $this->getPOSTRedirectURL( false, wfMsg( 'uadm-wgauthaddfailmsg', $abortError) );
+
     $user->addToDatabase();
     $user->addNewUserLogEntry();
     
@@ -349,9 +361,14 @@ EOT;
     }
     
     $successWikiText = implode('<br/>', $successWikiText);
+		
+    wfRunHooks( 'AddNewAccount', array( $user, true ) );
+    
+    $ssUpdate = new SiteStatsUpdate( 0, 0, 0, 0, 1 );
+		$ssUpdate->doUpdate();
     
     // Redirect to EditUser special page instead of AddUser to allow editing of 
     // user just added
-    return $this->getSpecialPageURL('EditUser',$this->username, array('returnto' => $this->returnto));
+    return $this->getSpecialPageURL('EditUser',$this->username, array('statusmsg' => base64_encode($successWikiText), 'statusok' => true, 'returnto' => $this->returnto));
   }
 }
