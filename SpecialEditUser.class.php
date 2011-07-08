@@ -16,7 +16,7 @@
  * @link http://www.mediawiki.org/wiki/Extension:UserAdmin   Documentation
  * @author Lance Gatlin <lance.gatlin@gmail.com>
  * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @version 0.1.0
+ * @version 1.0.0
 */
 
 /*

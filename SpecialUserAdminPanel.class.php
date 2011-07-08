@@ -16,7 +16,7 @@
  * @link http://www.mediawiki.org/wiki/Extension:UserAdmin   Documentation
  * @author Lance Gatlin <lance.gatlin@gmail.com>
  * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @version 0.1.0
+ * @version 1.0.0
 */
 
 /*
@@ -160,6 +160,8 @@ class SpecialUserAdminPanel extends SpecialUADMBase {
    */
   function doGET() 
   {
+    global $wgOut;
+    
     $this->validateGETParams();
     
     // Load the users from database according to pagination parameters
@@ -201,6 +203,23 @@ class SpecialUserAdminPanel extends SpecialUADMBase {
     $groupsfieldHTML = $this->groupsfield;
     $lastEditDatefieldHTML = $this->lasteditdatefield;
     
+    $wgOut->includeJQuery();
+    
+    $allOrNoneScript = <<<EOT
+<script language="javascript" type="text/javascript">
+var allOrNoneToggle = true;
+jQuery( document ).ready( function( $ ) {
+  $("#allornone").click(
+    function() {
+      $(".selusr").attr('checked', allOrNoneToggle);
+      allOrNoneToggle = !allOrNoneToggle;
+    }
+  );
+});
+</script>
+EOT;
+    $wgOut->addScript($allOrNoneScript);
+    
     return <<<EOT
 $pageNavHTML
 $pageSizerHTML
@@ -212,7 +231,7 @@ $filterControlsHTML
 <table>
     <tr>
         <th><button type="submit" name="action" value="newuser">$this->uapnewuseractionlabel</button></th>
-        <th><input type="checkbox" name="allOrNone"/></th>
+        <th><input id="allornone" type="checkbox" name="allOrNone" onclick="all()"/></th>
         <th>$idfieldHTML</th>
         <th>$userNamefieldHTML</th>
         <th>$realNamefieldHTML</th>
@@ -266,7 +285,7 @@ EOT;
 
     // SQL WHERE based on filter
     $sqlConds = '';
-    if (!empty($this->filtertext)) {
+    if (strlen($this->filtertext) > 0) {
       $sqlConds = $this->mLookupUserField[$this->filterby] . ' ';
       
       if($this->filterneg)
@@ -276,8 +295,10 @@ EOT;
       
       $sqlConds .= $dbr->addQuotes($this->filtertext);
     }
-
-    $estRowCount = $dbr->estimateRowCount('user', '*', $sqlConds);
+    
+    $result = $dbr->select('user', 'user_id', $sqlConds);
+    $estRowCount = $result->numRows();        
+//    $estRowCount = $dbr->estimateRowCount('user', '*', $sqlConds);
     
     // SQL LIMIT based on pagenum/pagesize
     if ($this->pagesize != 'all') 
@@ -391,7 +412,7 @@ EOT;
     return <<<EOT
 <tr>
     <td><a href="$editHref">($this->editactionlabel</a> | <a href="$contribsHref">$this->contributionsactionlabel</a> | <a href="$logsHref">$this->logsactionlabel</a>)</td>
-    <td><input type="checkbox" name="userids[]" value="$id"/></td>
+    <td><input class="selusr" type="checkbox" name="userids[]" value="$id"/></td>
     <td>$id</td>
     <td><a href="$userPageURL">$userName</a></td>
     <td>$realName</td>
