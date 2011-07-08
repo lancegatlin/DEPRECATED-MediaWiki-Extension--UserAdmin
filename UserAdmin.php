@@ -56,17 +56,18 @@ $wgSpecialPageGroups['AddUser'] = 'users'; # Place this under the users grouping
 $wgSpecialPageGroups['DeleteUser'] = 'users'; # Place this under the users grouping in special pages
 $wgSpecialPageGroups['EditUser'] = 'users'; # Place this under the users grouping in special pages
 
-$wgLogActionsHandlers['rights/changeduserpasswordlog'] = 'UADM_logActionHandler';
-$wgLogActionsHandlers['rights/changeduseremaillog'] = 'UADM_logActionHandler';
-$wgLogActionsHandlers['rights/changedusernamelog'] = 'UADM_logActionHandler';
-$wgLogActionsHandlers['rights/changeduserrealnamelog'] = 'UADM_logActionHandler';
-$wgLogActionsHandlers['rights/emailpasswordlog'] = 'UADM_logActionHandler';
-$wgLogActionsHandlers['rights/emailwelcomelog'] = 'UADM_logActionHandler';
+$wgLogActionsHandlers['rights/uadm-changeduserpasswordlog'] = 'UADM_logActionHandler';
+$wgLogActionsHandlers['rights/uadm-changeduseremaillog'] = 'UADM_logActionHandler';
+$wgLogActionsHandlers['rights/uadm-changedusernamelog'] = 'UADM_logActionHandler';
+$wgLogActionsHandlers['rights/uadm-changeduserrealnamelog'] = 'UADM_logActionHandler';
+$wgLogActionsHandlers['rights/uadm-emailpasswordlog'] = 'UADM_logActionHandler';
+$wgLogActionsHandlers['rights/uadm-emailwelcomelog'] = 'UADM_logActionHandler';
+$wgLogActionsHandlers['rights/uadm-usersdeletedlog'] = 'UADM_logActionHandler';
 
 /*
  * Formats log messages when invoked by MW
  * 
- * @param type unused
+ * @param $type unused
  * @param $action string the log message type
  * @param $title Title object
  * @param $skin Skin objec
@@ -82,16 +83,19 @@ function UADM_logActionHandler($type, $action, $title, $skin, $params)
   $options =  array('parseinline', 'replaceafter');
   switch($action)
   {
-    case 'emailpasswordlog' :
-    case 'emailwelcomelog' :
-    case 'changeduserpasswordlog' :
-      return wfMsgExt('uadm-' . $action, $options, $title->getPrefixedText());
+    case 'uadm-usersdeletedlog' :
+      return wfMsgExt($action, $options, $params[0]);
       
-    case 'changedusernamelog' :
-      return wfMsgExt('uadm-' . $action, $options, $params[0], $params[1], $params[2]);
+    case 'uadm-emailpasswordlog' :
+    case 'uadm-emailwelcomelog' :
+    case 'uadm-changeduserpasswordlog' :
+      return wfMsgExt($action, $options, $title->getPrefixedText());
       
-    case 'changeduseremaillog' :
-    case 'changeduserrealnamelog' :
-      return wfMsgExt('uadm-' . $action, $options, $title->getPrefixedText(), $params[0], $params[1]);
+    case 'uadm-changedusernamelog' :
+      return wfMsgExt($action, $options, $params[0], $params[1], $params[2]);
+      
+    case 'uadm-changeduseremaillog' :
+    case 'uadm-changeduserrealnamelog' :
+      return wfMsgExt($action, $options, $title->getPrefixedText(), $params[0], $params[1]);
   }
 }

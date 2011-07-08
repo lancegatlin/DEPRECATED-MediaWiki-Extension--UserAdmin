@@ -86,6 +86,7 @@ $messages['en'] = array(
         'uadm-nochangetopasswordlabel' => 'No change to password',
         'uadm-subjectlabel' => 'Subject',
         'uadm-bodylabel' => 'Body',
+        'uadm-reasonlabel' => 'Reason',
     
         // Common messages
         'uadm-returntomsg' => 'Return to [[$1]]',
@@ -117,6 +118,7 @@ $messages['en'] = array(
         'uadm-changedusernamelog' => 'changed user name of user id $1 from $2 to $3',
         'uadm-changeduserrealnamelog' => 'changed real name of [[$1]] from $2 to $3',
         'uadm-emailpasswordlog' => 'sent random password email to [[$1]]',
+        'uadm-usersdeletedlog' => 'deleted the following users: $1',
     
         // User admin panel specific
         'uadm-uapdeleteactionlabel' => '(-) Delete',
@@ -125,7 +127,6 @@ $messages['en'] = array(
         
         // Edit user specific
         'uadm-edituserlabel' => 'Edit user',
-        'uadm-reasonlabel' => 'Reason for changes',
         'uadm-saveuserlabel' => 'Save User',
     
         'uadm-changestogroupsuccessmsg' => 'Changes to groups for <b>$1</b> have been saved.',

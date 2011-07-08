@@ -334,7 +334,7 @@ EOT;
           return $this->getPOSTRedirectURL(false, wfMsg('uadm-passworderrormsg') . $pe->getText());
         }
         $logRights->addEntry( 
-          'changeduserpasswordlog',
+          'uadm-changeduserpasswordlog',
           $user->getUserPage(),
           $this->newuserreasonmsg,
           array(
@@ -350,7 +350,7 @@ EOT;
           return $this->getPOSTRedirectURL(false, wfMsg( 'uadm-mailerror', $result->getMessage() ) );
 
         $logRights->addEntry( 
-          'emailpasswordlog',
+          'uadm-emailpasswordlog',
           $user->getUserPage(),
           $this->newuserreasonmsg,
           array(
@@ -366,7 +366,7 @@ EOT;
           return $this->getPOSTRedirectURL( false, wfMsg( 'uadm-mailerror', $result->getMessage() ) );
 
         $logRights->addEntry( 
-          'emailwelcomelog',
+          'uadm-emailwelcomelog',
           $user->getUserPage(),
           $this->newuserreasonmsg,
           array(

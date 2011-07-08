@@ -488,7 +488,7 @@ EOT;
       $newName = $user->getName();
       
       $log->addEntry( 
-        'changedusernamelog',
+        'uadm-changedusernamelog',
         $user->getUserPage(),
         $this->reason,
         array(
@@ -508,7 +508,7 @@ EOT;
       $newRealName = $user->getRealName();
       
       $log->addEntry( 
-        'changeduserrealnamelog',
+        'uadm-changeduserrealnamelog',
         $user->getUserPage(),
         $this->reason,
         array(
@@ -527,7 +527,7 @@ EOT;
       $newEmail = $user->getEmail();
       
       $log->addEntry( 
-        'changeduseremaillog',
+        'uadm-changeduseremaillog',
         $user->getUserPage(),
         $this->reason,
         array(
@@ -555,7 +555,7 @@ EOT;
           return $this->getPOSTRedirectURL(false, wfMsg('uadm-passworderrormsg') . $pe->getText());
         }
         $log->addEntry( 
-          'changeduserpasswordlog',
+          'uadm-changeduserpasswordlog',
           $user->getUserPage(),
           $this->reason,
           array(
@@ -573,7 +573,7 @@ EOT;
         $changesMade = true;
         
         $log->addEntry( 
-          'emailpasswordlog',
+          'uadm-emailpasswordlog',
           $user->getUserPage(),
           $this->reason,
           array(
@@ -591,7 +591,7 @@ EOT;
         $changesMade = true;
         
         $log->addEntry( 
-          'emailwelcomelog',
+          'uadm-emailwelcomelog',
           $user->getUserPage(),
           $this->reason,
           array(

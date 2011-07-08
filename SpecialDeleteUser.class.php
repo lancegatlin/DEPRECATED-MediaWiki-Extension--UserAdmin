@@ -202,6 +202,7 @@ EOT;
     </tr>
     $userRowsHTML
    </table>
+    <label for="reason">$this->reasonlabel:</label> <input id="reason" type="text" name="reason" size="60" maxlength="255" /> $this->requiredlabel<br/>
    <button type="submit" name="action" value="confirmdelete">$this->confirmdeletelabel</button>
 </form>
 <br/>
@@ -277,6 +278,9 @@ EOT;
     
     if(!$wgUser->matchEditToken($this->edittoken, 'deleteuser' . $wgUser->getName()))
       throw new InvalidPOSTParamException(wfMsg('uadm-formsubmissionerrormsg'));
+    
+    if(empty($this->reason))
+      throw new InvalidPOSTParamException(wfMsg('uadm-fieldisrequiredmsg',$this->reasonfield));
     
     if(!empty($this->returnto))
     {
@@ -358,7 +362,7 @@ EOT;
   
   function doPOST()
   {
-    global $wgVersion;
+    global $wgVersion, $wgUser;
     
     switch($this->action)
     {
@@ -390,8 +394,21 @@ EOT;
     }
     
     foreach($users as $user)
+    {
+      $usersDeleted[] = $user->getName();
       $this->$deleteUser($user);
+    }
+    $usersDeleted = implode(',', $usersDeleted);
     
+    
+    $log = new LogPage( 'rights' );
+    $log->addEntry( 
+      'uadm-usersdeletedlog',
+      $wgUser->getUserPage(),
+      $this->reason,
+      $usersDeleted
+    );
+
     return $this->getURLWithStatus (array('returnto' => $this->returnto), true, wfMsg('uadm-deletesuccessmsg'));
   }
   
@@ -437,7 +454,7 @@ EOT;
     # Purge images created by user
     // TODO: delete images from file system
     # lance.gatlin@gmail.com: tested good 9Jul11
-    $usersImageCount = $dbr->estimateRowCount('image',array('img_user' => $id));
+//    $usersImageCount = $dbr->estimateRowCount('image',array('img_user' => $id));
     $dbr->delete('image',array('img_user' => $id));
     
     # Zero id of any blocks on this user (preserve any specific IP blocks)
@@ -456,45 +473,49 @@ EOT;
     # lance.gatlin@gmail.com: tested good 9Jul11
     $dbr->deleteJoin('text', 'revision','old_id', 'rev_text_id', array('rev_user' => $id));
     
+
     # Purge any revisions created by this user
-    $usersEditCount = $dbr->estimateRowCount('revision',array('rev_user' => $id));
-    // TODO: rev_parent_id fix
+    # Get all revision by the user
+    $pagesEditedByUser = array();
+    $revsByUser = $dbr->select('revision', array('rev_id','rev_parent_id','rev_page'), array('rev_user' => $id));
+    foreach($revsByUser as $r)
+    {
+      # Accumulate list of distinct page_ids of pages edited by the user
+      $pagesEditedByUser[] = $r->rev_page;
+      # Rethread rev_parent_ids that point at this revision
+      # lance.gatlin@gmail.com: tested good 9Jul11
+      $dbr->update('revision',array('rev_parent_id' => $r->rev_parent_id),array('rev_parent_id' => $r->rev_id));
+      # Rethread page_latest revision
+      # lance.gatlin@gmail.com: tested good 9Jul11
+      $dbr->update('page',array('page_latest' => $r->rev_parent_id, 'page_touched' => $dbr->timestamp()),array('page_latest' => $r->rev_id));
+    }
+    $pagesEditedByUser = array_unique($pagesEditedByUser);
+    $pagesEditedByUser = implode(',',$pagesEditedByUser);
+//    $usersPageCount = 0;
+    
+    # Delete all revisions by this user
     # lance.gatlin@gmail.com: tested good 9Jul11
     $dbr->delete('revision',array('rev_user' => $id));
     
-    # Purge any pages that now have no revisions (and clear cache for them)
-    $usersPageCount = 0;
-    //TODO
-    //$dbr->deleteJoin('page','revision','page_id','rev_page',array('count(rev_page)' => 0));
-    
+    # Purge any pages the user has revisions for that now have no revisions
+    # lance.gatlin@gmail.com: tested good 9Jul11
+    if(strlen($pagesEditedByUser)> 0)
+      $dbr->query("DELETE page.* FROM page LEFT JOIN revision ON page.page_id = revision.rev_page WHERE page.page_id IN ($pagesEditedByUser) AND revision.rev_id IS NULL");
+
     # Purge user page, dump cache and all revisions to it
-      
+    # lance.gatlin@gmail.com: tested good 9Jul11
+    $userName = $user->getName();
+    $ns0 = NS_USER;
+    $ns1 = NS_USER_TALK;
+    $dbr->query("DELETE revision.* FROM revision LEFT JOIN page ON revision.rev_page = page.page_id WHERE page.page_title = '$userName' AND (page.page_namespace=$ns0 OR page.page_namespace=$ns1)" );
+    $dbr->query("DELETE FROM page WHERE page_title='$userName' AND (page_namespace=$ns0 OR page_namespace=$ns1)" );
+
     # Purge any newtalk entries for this user
     # lance.gatlin@gmail.com: tested good 9Jul11
     $dbr->delete('user_newtalk',array('user_id'=>$id));
     
     # Purge any watchlist entries for this user
     # lance.gatlin@gmail.com: tested good 9Jul11
-    $dbr->delete('watchlist',array('wl_user' => $id));
-   
-    # Lower site stats of users
-    # This appears to not be used?!? Zero rows in normal database...
-/*
-    $result = $dbr->select('site_stats','ss_total_edits,ss_total_pages,ss_users,ss_active_users,ss_images,ss_users');
-    $a = $result->fetchRow();
-    $userWasActive = $usersEditCount > 0 || $usersImageCount > 0;
-    
-    $dbr->update('site_stats'
-                  ,array(  
-                      'ss_total_edits' => $a['ss_total_edits'] - $usersEditCount,
-                      'ss_total_pages'=> $a['ss_total_pages'] - $usersPageCount,
-                      'ss_users' => $a['ss_users'] - 1,
-                      'ss_active_users' => $userWasActive ? $a['ss_active_users'] - 1 : $a['ss_active_users'],
-                      'ss_images' => $a['ss_images'] - $usersImageCount
-                      )
-                  ,'*'
-                );
-
-*/
+    $dbr->delete('watchlist',array('wl_user' => $id));   
   }
 }
