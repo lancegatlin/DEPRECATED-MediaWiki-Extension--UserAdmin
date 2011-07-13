@@ -22,10 +22,10 @@
 /*
  * Special page to delete a user
  */
-class SpecialDeleteUser extends SpecialUADMBase {
+class SpecialMassBlock extends SpecialUADMBase {
 
   function __construct() {
-    parent::__construct('DeleteUser', 'userrights', array());
+    parent::__construct('MassBlock', 'userrights', array());
   }
 
   /*
@@ -181,8 +181,24 @@ EOT;
 
     $editToken = $wgUser->editToken('deleteuser' . $wgUser->getName());
 
+    # Get expiry options list (copied from SpecialBlockip.php
+    $scBlockExpiryOptions = wfMsgForContent( 'ipboptions' );
+
+		$showblockoptions = $scBlockExpiryOptions != '-';
+		if( !$showblockoptions ) $mIpbother = $mIpbexpiry;
+
+		$blockExpiryFormOptions = Xml::option( wfMsg( 'ipbotheroption' ), 'other' );
+		foreach( explode( ',', $scBlockExpiryOptions ) as $option ) {
+			if( strpos( $option, ':' ) === false ) $option = "$option:$option";
+			list( $show, $value ) = explode( ':', $option );
+			$show = htmlspecialchars( $show );
+			$value = htmlspecialchars( $value );
+			$blockExpiryFormOptions .= Xml::option( $show, $value, $this->BlockExpiry === $value ? true : false ) . "\n";
+		}
+    $expiryHTML = <<<EOT
+<select id="expiry" name="expiry">$blockExpiryFormOptions</select>
+EOT;
     return <<<EOT
-<h2 class="visualClear">$this->confirmdeletewarningmsg</h2>
 <form name="input" action="$this->mURL" method="post" class="visualClear">
   <input type="hidden" name="edittoken" value="$editToken"/>
   <input type="hidden" name="returnto" value="$this->returnto"/>
@@ -201,8 +217,9 @@ EOT;
     </tr>
     $userRowsHTML
    </table>
+    $expiryHTML
     <label for="reason">$this->reasonlabel:</label> <input id="reason" type="text" name="reason" size="60" maxlength="255" /> $this->requiredlabel<br/>
-   <button type="submit" name="action" value="confirmdelete">$this->confirmdeletelabel</button>
+   <button type="submit" name="action" value="confirmdelete">$this->confirmblocklabel</button>
 </form>
 <br/>
 $returnToHTML
@@ -286,7 +303,7 @@ EOT;
       $title = Title::newFromText($this->returnto);
       if(!is_object($title) || !$title->isKnown())
       {
-        $title = Title::newFromText('Special:DeleteUser');
+        $title = Title::newFromText('Special:MassBlockUser');
         $title->fixSpecialName();
         $this->returnto = $title->getPrefixedText();
       }
@@ -394,10 +411,10 @@ EOT;
     
     foreach($users as $user)
     {
-      $usersDeleted[] = $user->getName();
+      $usersMassBlockd[] = $user->getName();
       $this->$deleteUser($user);
     }
-    $usersDeleted = implode(',', $usersDeleted);
+    $usersMassBlockd = implode(',', $usersMassBlockd);
     
     
     $log = new LogPage( 'rights' );
@@ -405,7 +422,7 @@ EOT;
       'uadm-usersdeletedlog',
       $wgUser->getUserPage(),
       $this->reason,
-      $usersDeleted
+      $usersMassBlockd
     );
 
     return $this->getURLWithStatus (array('returnto' => $this->returnto), true, wfMsg('uadm-deletesuccessmsg'));
@@ -492,7 +509,7 @@ EOT;
     $pagesEditedByUser = implode(',',$pagesEditedByUser);
 //    $usersPageCount = 0;
     
-    # Delete all revisions by this user
+    # MassBlock all revisions by this user
     # lance.gatlin@gmail.com: tested good 9Jul11
     $dbr->delete('revision',array('rev_user' => $id));
     

@@ -69,6 +69,13 @@ class SpecialUserAdminPanel extends SpecialUADMBase {
         'filterneg' => '0',
         'filtertext' => '',
         'sortasc' => '1',
+        // Parameters for mass blocks
+        'userid' => '',
+        'username' => '',
+        'userids' => array(),
+        'usernames' => array(),
+        'returnto' => $this->getDefaultReturnTo(),
+        
     );
     $retv['filterby'] = wfMsg('uadm-usernamefield');
     $retv['sortby'] = wfMsg('uadm-useridfield');

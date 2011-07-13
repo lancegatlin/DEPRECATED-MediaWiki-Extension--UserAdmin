@@ -318,60 +318,27 @@ EOT;
     $successWikiText = array();
     $successWikiText[] = wfMsg('uadm-newusersuccessmsg', $this->username);
     
+    $userPassword = '';
     switch($this->pwdaction)
     {
       case 'manual' :
-        try {
-        
-//          $result = $user->checkPassword($this->password1);
-//          if($result !== true)
-//            throw new InvalidPOSTParamException(wfMsg('uadm-invalidpasswordmsg'));
-          
+        try {        
           $user->setPassword($this->password1);
+          $userPassword = $this->password1;
         }
         catch(PasswordError $pe)
         {
           return $this->getPOSTRedirectURL(false, wfMsg('uadm-passworderrormsg') . $pe->getText());
         }
-        $logRights->addEntry( 
-          'uadm-changeduserpasswordlog',
-          $user->getUserPage(),
-          $this->newuserreasonmsg,
-          array(
-          )
-        );
         $successWikiText[] = wfMsg('uadm-passwordchangesuccessmsg',$this->username);
         break;
       
-      case 'email' :
-        $result = self::mailPassword($user);
-
-        if( WikiError::isError( $result ) )
-          return $this->getPOSTRedirectURL(false, wfMsg( 'uadm-mailerror', $result->getMessage() ) );
-
-        $logRights->addEntry( 
-          'uadm-emailpasswordlog',
-          $user->getUserPage(),
-          $this->newuserreasonmsg,
-          array(
-          )
-        );
-        $successWikiText[] = wfMsg('uadm-passwordemailsuccessmsg', $this->username, $this->email);
-        break;
-        
       case 'emailwelcome' :
         $result = self::mailWelcomeAndPassword($user);
 
         if( WikiError::isError( $result ) )
           return $this->getPOSTRedirectURL( false, wfMsg( 'uadm-mailerror', $result->getMessage() ) );
 
-        $logRights->addEntry( 
-          'uadm-emailwelcomelog',
-          $user->getUserPage(),
-          $this->newuserreasonmsg,
-          array(
-          )
-        );
         $successWikiText[] = wfMsg('uadm-welcomeemailsuccessmsg', $this->username, $this->email);
         break;
     }
@@ -383,7 +350,7 @@ EOT;
 		if( !wfRunHooks( 'AbortNewAccount', array( $user, &$abortError ) ) )
 			return $this->getPOSTRedirectURL( false, wfMsg( 'uadm-hookblocknewusermsg', $abortError) );
 		
-    if(!$wgAuth->addUser( $user, $this->password1, $this->email, $this->realname ) )
+    if(!$wgAuth->addUser( $user, $userPassword, $this->email, $this->realname ) )
 			return $this->getPOSTRedirectURL( false, wfMsg( 'uadm-wgauthaddfailmsg', $abortError) );
 
     $user->addToDatabase();
@@ -403,6 +370,29 @@ EOT;
     
     $ssUpdate = new SiteStatsUpdate( 0, 0, 0, 0, 1 );
 		$ssUpdate->doUpdate();
+    
+    # password log entry
+    switch($this->pwdaction)
+    {
+      case 'manual' :
+        $logRights->addEntry( 
+          'uadm-changeduserpasswordlog',
+          $user->getUserPage(),
+          $this->newuserreasonmsg,
+          array(
+          )
+        );
+        break;
+      case 'emailwelcome' :
+        $logRights->addEntry( 
+          'uadm-emailwelcomelog',
+          $user->getUserPage(),
+          $this->newuserreasonmsg,
+          array(
+          )
+        );
+        break;
+    }
     
     // Redirect to EditUser special page instead of AddUser to allow editing of 
     // user just added

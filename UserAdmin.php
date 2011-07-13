@@ -43,6 +43,7 @@ $wgExtensionMessagesFiles['UserAdmin'] = $dir . 'UserAdmin.i18n.php';
 $wgAutoloadClasses['SpecialUserAdminPanel'] = $dir . 'SpecialUserAdminPanel.class.php'; 
 $wgAutoloadClasses['SpecialAddUser'] = $dir . 'SpecialAddUser.class.php'; 
 $wgAutoloadClasses['SpecialDeleteUser'] = $dir . 'SpecialDeleteUser.class.php'; 
+$wgAutoloadClasses['SpecialMassBlock'] = $dir . 'SpecialMassBlock.class.php'; 
 $wgAutoloadClasses['SpecialEditUser'] = $dir . 'SpecialEditUser.class.php'; 
 $wgAutoloadClasses['SpecialUADMBase'] = $dir . 'SpecialUADMBase.class.php'; 
 $wgAutoloadClasses['UADMLogActionHandler'] = $dir . 'UserAdminLogActionHandler.class.php'; 
@@ -51,11 +52,13 @@ $wgSpecialPages['UserAdmin'] = 'SpecialUserAdminPanel';
 $wgSpecialPages['AddUser'] = 'SpecialAddUser'; 
 $wgSpecialPages['DeleteUser'] = 'SpecialDeleteUser'; 
 $wgSpecialPages['EditUser'] = 'SpecialEditUser'; 
+//$wgSpecialPages['MassBlock'] = 'SpecialMassBlock'; 
 
 $wgSpecialPageGroups['UserAdmin'] = 'users'; 
 $wgSpecialPageGroups['AddUser'] = 'users'; 
 $wgSpecialPageGroups['DeleteUser'] = 'users'; 
 $wgSpecialPageGroups['EditUser'] = 'users'; 
+//$wgSpecialPageGroups['MassBlock'] = 'users'; 
 
 $wgLogActionsHandlers['rights/uadm-changeduserpasswordlog'] = 'UADMLogActionHandler::logActionHandler';
 $wgLogActionsHandlers['rights/uadm-changeduseremaillog'] = 'UADMLogActionHandler::logActionHandler';

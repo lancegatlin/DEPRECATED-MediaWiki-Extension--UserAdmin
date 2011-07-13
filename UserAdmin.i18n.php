@@ -38,6 +38,8 @@ $messages['en'] = array(
         'deleteuser-desc' => 'Delete a user',
         'edituser' => 'Edit user',
         'edituser_desc' => 'Edit a user',
+        'massblock' => 'Block users',
+        'massblock_desc' => 'Block multiple users',
     
         // Fields
         'uadm-useridfield' => 'ID',
@@ -49,7 +51,7 @@ $messages['en'] = array(
         'uadm-editcountfield' => 'Edit Count',
         'uadm-usertoucheddatehelp' => 'The last time a user made a change on the site, including logins, changes to pages (any namespace), watchlistings, and preference changes.',
         'uadm-lasteditdatefield' => 'Last Edit Date',
-        'uadm-groupsfield' => 'Groups',
+        'uadm-groupsfield' => 'Effective Groups',
         'uadm-emailauthdatefield' => 'Email Authenticated Date',
         'uadm-reasonfield' => 'Reason',
         'uadm-passwordfield' => 'Password',
@@ -146,5 +148,8 @@ $messages['en'] = array(
         'uadm-confirmdeletewarningmsg' => 'WARNING: All pages, revisions, and file uploads owned by the following users will also be deleted:',
         'uadm-nodeleteadminmsg' => 'Deletion of administrator account $1 is disallowed.',
         'uadm-invalidversionmsg' => 'Delete user special page does not support this MediaWiki version.',
-        'uadm-deletesuccessmsg' => 'All requested users have been deleted.'
+        'uadm-deletesuccessmsg' => 'All requested users have been deleted.',
+    
+        // Block user specific
+        'uadm-confirmblocklabel' => 'Confirm Block',
 );
