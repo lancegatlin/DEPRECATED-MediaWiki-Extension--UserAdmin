@@ -1,22 +1,21 @@
 <?php
 
 /**
- * UserAdmin is a MediaWiki extension which allows administrators to add and 
- * delete users (e.g. spam or unused accounts), change user passwords, edit user 
- * details (e.g. username, real name or email), edit user groups, resend emails 
- * (e.g. reset password email or welcome message email). This extension is 
- * primarily for administrators of private wikis that require tighter control of 
- * user accounts.
+ * UserAdmin is a MediaWiki extension which allows administrators to add users, 
+ * permanently remove spam or unused accounts, change user passwords, edit user 
+ * details, send reset password or welcome emails and list users with pagination 
+ * and filter controls. This extension is primarily for administrators of 
+ * private wikis that require tighter control of user accounts.
  *
  * Usage:
- * 	require_once("extensions/UserAdmin/UserAdmin.php"); in LocalSettings.php
+ * 	require_once("$IP/extensions/UserAdmin/UserAdmin.php"); in LocalSettings.php
  *
  * @file
  * @ingroup Extensions
  * @link http://www.mediawiki.org/wiki/Extension:UserAdmin   Documentation
  * @author Lance Gatlin <lance.gatlin@gmail.com>
  * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @version 1.0.0
+ * @version 0.9.0
 */
 
 $aliases = array();
@@ -25,17 +24,17 @@ $messages = array();
 $aliases['en'] = array(
         'UserAdmin' => array( 'User Administration' ),
         'AddUser' => array( 'Add User' ),
-        'DeleteUser' => array( 'Delete User' ),
+        'PurgeUser' => array( 'Purge User' ),
         'EditUser' => array( 'Edit User' ),
 );
  
 $messages['en'] = array(
         'useradmin' => 'User Administration',
-        'useradmin-desc' => 'UserAdmin is a MediaWiki extension which allows administrators to add and delete users (e.g. spam or unused accounts), change user passwords, edit user details (e.g. username, real name or email), edit user groups, resend emails (e.g. reset password email or welcome message email).',
+        'useradmin-desc' => 'UserAdmin is a MediaWiki extension which allows administrators to add users, permanently remove spam or unused accounts, change user passwords, edit user details, send reset password or welcome emails and list users with pagination and filter controls. This extension is primarily for administrators of private wikis that require tighter control of user accounts.',
         'adduser' => 'Add user',
         'adduser_desc' => 'Create a new user',
-        'deleteuser' => 'Delete user',
-        'deleteuser-desc' => 'Delete a user',
+        'purgeuser' => 'Purge user',
+        'purgeuser-desc' => 'Purge a user',
         'edituser' => 'Edit user',
         'edituser_desc' => 'Edit a user',
         'massblock' => 'Block users',
@@ -67,7 +66,7 @@ $messages['en'] = array(
         'uadm-logsactionlabel' => 'Logs',
         'uadm-talkactionlabel' => 'Talk',
         'uadm-backactionlabel' => 'Back',
-        'uadm-deleteactionlabel' => 'Delete',
+        'uadm-purgeactionlabel' => 'Purge',
         'uadm-previewactionlabel' => 'Preview',
         'uadm-ipsactionlabel' => 'IPs',
         'uadm-contributionsactionlabel' => 'Contribs',
@@ -120,11 +119,11 @@ $messages['en'] = array(
         'uadm-changedusernamelog' => 'changed user name of user id $1 from $2 to $3',
         'uadm-changeduserrealnamelog' => 'changed real name of [[$1]] from $2 to $3',
         'uadm-emailpasswordlog' => 'sent random password email to [[$1]]',
-        'uadm-usersdeletedlog' => 'deleted the following users: $1',
+        'uadm-userspurgedlog' => 'purged the following users: $1',
     
         // User admin panel specific
-        'uadm-uapdeleteactionlabel' => '(-) Delete',
-        'uadm-uapnewuseractionlabel' => '(+) Add User',
+        'uadm-uappurgeactionlabel' => 'Purge',
+        'uadm-uapnewuseractionlabel' => 'Add User',
         'uadm-filterbylabel' => 'Filter by',
         
         // Edit user specific
@@ -142,13 +141,13 @@ $messages['en'] = array(
         'uadm-wgauthaddfailmsg' => 'wgAuth addUser failed',
         'uadm-createextacctfailmsg' => 'Account creation is not allowed by external authorization plug-in (wgAuth).',
     
-        // Delete user specific
-        'uadm-deleteauserlabel' => 'Delete a user:',
-        'uadm-confirmdeletelabel' => 'Confirm Delete',
-        'uadm-confirmdeletewarningmsg' => 'WARNING: All pages, revisions, and file uploads owned by the following users will also be deleted:',
-        'uadm-nodeleteadminmsg' => 'Deletion of administrator account $1 is disallowed.',
-        'uadm-invalidversionmsg' => 'Delete user special page does not support this MediaWiki version.',
-        'uadm-deletesuccessmsg' => 'All requested users have been deleted.',
+        // Purge user specific
+        'uadm-purgeauserlabel' => 'Purge a user:',
+        'uadm-confirmpurgelabel' => 'Confirm Purge',
+        'uadm-confirmpurgewarningmsg' => 'WARNING: This operation cannot be undone!<br/>WARNING: ALL pages, revisions, and file uploads owned by the following users will be PURGED.<br/>WARNING: Backup the database before proceeding!',
+        'uadm-nopurgeadminmsg' => 'Purging of administrator account $1 is disallowed.',
+        'uadm-invalidversionmsg' => 'Purge user special page does not support this MediaWiki version.',
+        'uadm-purgesuccessmsg' => 'All requested users have been purged.',
     
         // Block user specific
         'uadm-confirmblocklabel' => 'Confirm Block',

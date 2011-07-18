@@ -1,22 +1,21 @@
 <?php
 
 /**
- * UserAdmin is a MediaWiki extension which allows administrators to add and 
- * delete users (e.g. spam or unused accounts), change user passwords, edit user 
- * details (e.g. username, real name or email), edit user groups, resend emails 
- * (e.g. reset password email or welcome message email). This extension is 
- * primarily for administrators of private wikis that require tighter control of 
- * user accounts.
+ * UserAdmin is a MediaWiki extension which allows administrators to add users, 
+ * permanently remove spam or unused accounts, change user passwords, edit user 
+ * details, send reset password or welcome emails and list users with pagination 
+ * and filter controls. This extension is primarily for administrators of 
+ * private wikis that require tighter control of user accounts.
  *
  * Usage:
- * 	require_once("extensions/UserAdmin/UserAdmin.php"); in LocalSettings.php
+ * 	require_once("$IP/extensions/UserAdmin/UserAdmin.php"); in LocalSettings.php
  *
  * @file
  * @ingroup Extensions
  * @link http://www.mediawiki.org/wiki/Extension:UserAdmin   Documentation
  * @author Lance Gatlin <lance.gatlin@gmail.com>
  * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @version 1.0.0
+ * @version 0.9.0
 */
 
 class UADMLogActionHandler {
@@ -31,7 +30,7 @@ class UADMLogActionHandler {
  * @param $params array of string parameters for message
  * @return string formatted log message
  */
-static function UlogActionHandler($type, $action, $title, $skin, $params)
+static function logActionHandler($type, $action, $title, $skin, $params)
 {
   foreach($params as &$param)
     if($param == '')
@@ -40,7 +39,7 @@ static function UlogActionHandler($type, $action, $title, $skin, $params)
   $options =  array('parseinline', 'replaceafter');
   switch($action)
   {
-    case 'uadm-usersdeletedlog' :
+    case 'uadm-userspurgedlog' :
       return wfMsgExt($action, $options, $params[0]);
       
     case 'uadm-emailpasswordlog' :

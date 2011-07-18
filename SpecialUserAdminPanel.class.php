@@ -1,22 +1,21 @@
 <?php
 
 /**
- * UserAdmin is a MediaWiki extension which allows administrators to add and 
- * delete users (e.g. spam or unused accounts), change user passwords, edit user 
- * details (e.g. username, real name or email), edit user groups, resend emails 
- * (e.g. reset password email or welcome message email). This extension is 
- * primarily for administrators of private wikis that require tighter control of 
- * user accounts.
+ * UserAdmin is a MediaWiki extension which allows administrators to add users, 
+ * permanently remove spam or unused accounts, change user passwords, edit user 
+ * details, send reset password or welcome emails and list users with pagination 
+ * and filter controls. This extension is primarily for administrators of 
+ * private wikis that require tighter control of user accounts.
  *
  * Usage:
- * 	require_once("extensions/UserAdmin/UserAdmin.php"); in LocalSettings.php
+ * 	require_once("$IP/extensions/UserAdmin/UserAdmin.php"); in LocalSettings.php
  *
  * @file
  * @ingroup Extensions
  * @link http://www.mediawiki.org/wiki/Extension:UserAdmin   Documentation
  * @author Lance Gatlin <lance.gatlin@gmail.com>
  * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @version 1.0.0
+ * @version 0.9.0
 */
 
 /*
@@ -114,8 +113,8 @@ class SpecialUserAdminPanel extends SpecialUADMBase {
     {
       case 'newuser' :
         return $this->getSpecialPageURL('AddUser', '', array('returnto' => $this->getTitle()->getPrefixedText()));
-      case 'delete' :
-        return $this->getSpecialPageURL('DeleteUser', '', array('userids' => $this->userids, 'returnto' => $this->getTitle()->getPrefixedText()));
+      case 'purge' :
+        return $this->getSpecialPageURL('PurgeUser', '', array('userids' => $this->userids, 'returnto' => $this->getTitle()->getPrefixedText()));
     }
     return __FUNCTION__;
   }
@@ -233,7 +232,7 @@ $pageSizerHTML
 $pageSizerSpacerHTML
 $filterControlsHTML
 <form name="input" action="$this->mURL" method="post" class="visualClear">
-<button type="submit" name="action" value="delete">$this->uapdeleteactionlabel</button>
+<button type="submit" name="action" value="purge">$this->uappurgeactionlabel</button>
 <button type="submit" name="action" value="block">$this->blockactionlabel</button>
 <table>
     <tr>

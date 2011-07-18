@@ -1,22 +1,21 @@
 <?php
 
 /**
- * UserAdmin is a MediaWiki extension which allows administrators to add and 
- * delete users (e.g. spam or unused accounts), change user passwords, edit user 
- * details (e.g. username, real name or email), edit user groups, resend emails 
- * (e.g. reset password email or welcome message email). This extension is 
- * primarily for administrators of private wikis that require tighter control of 
- * user accounts.
+ * UserAdmin is a MediaWiki extension which allows administrators to add users, 
+ * permanently remove spam or unused accounts, change user passwords, edit user 
+ * details, send reset password or welcome emails and list users with pagination 
+ * and filter controls. This extension is primarily for administrators of 
+ * private wikis that require tighter control of user accounts.
  *
  * Usage:
- * 	require_once("extensions/UserAdmin/UserAdmin.php"); in LocalSettings.php
+ * 	require_once("$IP/extensions/UserAdmin/UserAdmin.php"); in LocalSettings.php
  *
  * @file
  * @ingroup Extensions
  * @link http://www.mediawiki.org/wiki/Extension:UserAdmin   Documentation
  * @author Lance Gatlin <lance.gatlin@gmail.com>
  * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @version 1.0.0
+ * @version 0.9.0
 */
 
 /*
@@ -205,7 +204,7 @@ EOT;
     $userPageHref = $user->getUserPage()->getLocalURL();
     $userTalkPageHref = $user->getUserPage()->getTalkPage()->getLocalURL();
     $blockHref = $this->getSpecialPageURL('Block',$userName);
-    $deleteHref = $this->getSpecialPageURL('DeleteUser',$userName);
+    $purgeHref = $this->getSpecialPageURL('PurgeUser',$userName);
     $logsHref = $this->getSpecialPageURL('Log',$userName);
     $checkuserHref = $this->getSpecialPageURL('CheckUser',$userName);
     
@@ -287,7 +286,7 @@ EOT;
     }
     
     $subtitle =<<<EOT
-$backHTML<a href="$userPageHref"><b>$userName</b></a> (<a href="$userTalkPageHref">$this->talkactionlabel</a> | <a href="$blockHref">$this->blockactionlabel</a> | <a href="$deleteHref">$this->deleteactionlabel</a> | <a href="$logsHref">$this->logsactionlabel</a> | <a href="$contribsHref">$this->contributionsactionlabel</a> | <a href="$checkuserHref">$this->ipsactionlabel</a>) 
+$backHTML<a href="$userPageHref"><b>$userName</b></a> (<a href="$userTalkPageHref">$this->talkactionlabel</a> | <a href="$blockHref">$this->blockactionlabel</a> | <a href="$purgeHref">$this->purgeactionlabel</a> | <a href="$logsHref">$this->logsactionlabel</a> | <a href="$contribsHref">$this->contributionsactionlabel</a> | <a href="$checkuserHref">$this->ipsactionlabel</a>) 
 EOT;
     
     $wgOut->setSubtitle($subtitle);
