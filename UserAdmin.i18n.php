@@ -14,7 +14,7 @@
  * @ingroup Extensions
  * @link http://www.mediawiki.org/wiki/Extension:UserAdmin   Documentation
  * @author Lance Gatlin <lance.gatlin@gmail.com>
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @license http://opensource.org/licenses/gpl-3.0.html GNU Public License 3.0
  * @version 0.9.0
 */
 
@@ -144,7 +144,7 @@ $messages['en'] = array(
         // Purge user specific
         'uadm-purgeauserlabel' => 'Purge a user:',
         'uadm-confirmpurgelabel' => 'Confirm Purge',
-        'uadm-confirmpurgewarningmsg' => 'WARNING: This operation cannot be undone!<br/>WARNING: ALL pages, revisions, and file uploads owned by the following users will be PURGED.<br/>WARNING: Backup the database before proceeding!',
+        'uadm-confirmpurgewarningmsg' => 'WARNING: This operation cannot be undone!<br/>WARNING: ALL pages, revisions, and file uploads created by the following users will be permanently removed from the database and file system.<br/>WARNING: Backup the database before proceeding!',
         'uadm-nopurgeadminmsg' => 'Purging of administrator account $1 is disallowed.',
         'uadm-invalidversionmsg' => 'Purge user special page does not support this MediaWiki version.',
         'uadm-purgesuccessmsg' => 'All requested users have been purged.',

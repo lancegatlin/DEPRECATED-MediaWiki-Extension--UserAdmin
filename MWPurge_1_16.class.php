@@ -14,71 +14,114 @@
  * @ingroup Extensions
  * @link http://www.mediawiki.org/wiki/Extension:UserAdmin   Documentation
  * @author Lance Gatlin <lance.gatlin@gmail.com>
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @license http://opensource.org/licenses/gpl-3.0.html GNU Public License 3.0
  * @version 0.9.0
 */
 
 class MWPurge_1_16 extends MWPurge {
   
+  /*
+   * Purge revisions and any empty pages
+   * @param $whereSQL string of the WHERE clause to select from the revision table
+   */
   public function purgeRevisionsSQL($whereSQL)
   {
-    $revs_rows = $this->dbw->select('revision',array('rev_id','rev_page','rev_parent_id'),array($whereSQL));
-    
+    // This abomination produces the following SQL: 
+    // SELECT rev_id,rev_page,rev_parent_id,page_latest,page_counter FROM `revision` LEFT JOIN `page` ON ((rev_page=page_id)) WHERE ($whereSQL)
+    $revs_rows = $this->dbw->select(array('revision','page'),array('rev_id','rev_page','rev_parent_id','page_latest','page_counter'),array($whereSQL),'DatabaseBase::select',array(),array('page' => array('LEFT JOIN','rev_page=page_id')));
+
     if($revs_rows->numRows() == 0)
       return;
     
-//    echo "whereSQL=$whereSQL count=" . $revs_rows->numRows() . " " . "sql=" . $this->dbw->selectSQLText('revision',array('rev_id','rev_page','rev_parent_id'),array($whereSQL));
-    $pageIDs = array();
+    # Sort by pages to allow detecting if all of a page's revisions are being completely purged
     foreach($revs_rows as $row)
     {
-//      echo "rev_id=$row->rev_id ";
-      # Accumulate list of distinct page_ids of pages
-      $pageIDs[] = $row->rev_page;
-      
-      # Rethread rev_parent_ids to skip this revision
-      # lance.gatlin@gmail.com: TESTME
-      $this->dbw->update('revision',array('rev_parent_id' => $row->rev_parent_id),array('rev_parent_id' => $row->rev_id));
-
-      # Rethread page_latest for tihs revision, update page_touched to dump the page cache
-      # lance.gatlin@gmail.com: TESTME
-      $this->dbw->update('page',array('page_latest' => $row->rev_parent_id, 'page_touched' => $this->dbw->timestamp()),array('page_latest' => $row->rev_id));
+      if(!isset($pages[$row->rev_page]))
+      {
+        $pages[$row->rev_page] = array( 
+            'page_counter' => $row->page_counter,
+            'page_latest' => $row->page_latest,
+            'revisions' => array($row),
+         );
+      }
+      else
+        $pages[$row->rev_page]['revisions'][] = $row;
     }
-    $pageIDs_list = implode(',',array_unique($pageIDs));
     
-    # Purge any text belonging to revisions
-    # lance.gatlin@gmail.com: TESTME
-    $this->dbw->deleteJoin('text','revision','old_id','rev_text_id', array($whereSQL));
+    $emptyPageIDs = array();
+    $revIDsToDelete = array();
+    foreach($pages as $page_id => $pageInfo)
+    {
+      # Detect if all of a page's revisions are being completely purged
+      if($pageInfo['page_counter'] == count($pageInfo['revisions']))
+      {
+        # If yes, add it to the list to remove completely later
+        $emptyPageIDs[] = $page_id;
+      }
+      else
+      {
+        # Otherwise, rethread and add each revision to list to purge
+        foreach($pageInfo['revisions'] as $row)
+        {
+          # Rethread rev_parent_ids to skip this revision
+          # lance.gatlin@gmail.com: 20Jul11
+          $this->dbw->update('revision',array('rev_parent_id' => $row->rev_parent_id),array('rev_parent_id' => $row->rev_id));
+
+          # If this revision was the page_latest for this revision, update page_latest and page_touched to dump the page cache
+          # lance.gatlin@gmail.com: 20Jul11
+          if($row->page_latest == $row->rev_id)
+            $this->dbw->update('page',array('page_latest' => $row->rev_parent_id, 'page_touched' => $this->dbw->timestamp()),array('page_latest' => $row->rev_id));
+          
+          $revIDsToDelete[] = $row->rev_id;
+        }
+      }
+    }
     
-    # Purge all revisions
-    # lance.gatlin@gmail.com: TESTME
-    $this->dbw->delete('revision',array($whereSQL));
+    # Purge revisions added above for individual purging
+    if(count($revIDsToDelete))
+      # lance.gatlin@gmail.com: 20Jul11
+      $this->dbw->delete('revision',array('rev_id' => $revIDsToDelete));
     
-    # Purge any pages that now have no revisions
-    # lance.gatlin@gmail.com: TESTME
-    if(strlen($pageIDs_list)> 0)
-      $this->dbw->query("DELETE FROM $this->pageTable LEFT JOIN $this->revisionTable ON page_id=rev_page WHERE page_id IN ($pageIDs_list) AND rev_id IS NULL");
-    
+    # Use purgePages to purge pages that have all revisions being purged
+    if(count($emptyPageIDs) > 0)
+      $this->purgePages($emptyPageIDs);
   }
   
+  /*
+   * Purge pages and their revisions
+   * @param $whereSQL string of the WHERE clause to select from the page table
+   */
   public function purgePagesSQL($whereSQL)
   {
-    # Purge text, revisions and pages
-    # lance.gatlin@gmail.com: TESTME
-    $revs_rows = $this->dbw->query("SELECT rev_id FROM $this->revisionTable JOIN $this->pageTable ON rev_page=page_id WHERE $whereSQL");
+    $pages_rows = $this->dbw->select('page', 'page_id', array($whereSQL));
     
-    if($revs_rows->numRows() == 0)
+    $pageIDs = array();
+    foreach($pages_rows as $row)
+      $pageIDs[] = $row->page_id;
+    
+    $this->purgePages($pageIDs);
+  }
+  
+  /*
+   * Purge pages and their revisions
+   * @param $pageIDs array of page ids to purge
+   */
+  public function purgePages($pageIDs)
+  {
+    if(count($pageIDs) == 0)
       return;
     
-    $revIDs = array();
-    foreach($revs_rows as $row)
-      $revIDs[] = $row->rev_id;
-    $revIDs_list = implode(',',$revIDs);
-    //$this->dbw->query("DELETE FROM $this->textTable JOIN $this->revisionTable ON old_id=rev_text_id WHERE rev_page IN ($revIDs_list)");
-    $this->dbw->deleteJoin('text','revision','old_id','rev_text_id',array("rev_page IN ($revIDs_list)"));
-    $this->dbw->deleteJoin('revision','page','rev_page','page_id',array($whereSQL));
-    $this->dbw->delete('page',array($whereSQL));
+    # Purge text, revisions and pages
+    # lance.gatlin@gmail.com: TESTME
+    $this->dbw->deleteJoin('text','revision','old_id','rev_text_id',array('rev_page' => $pageIDs));
+    $this->dbw->delete('revision',array('rev_page' => $pageIDs));
+    $this->dbw->delete('page',array('page_id' => $pageIDs));
   }
 
+  /*
+   * Purge deleted pages
+   * @param $whereSQL string of the WHERE clause to select from the archive table
+   */
   public function purgeArchivedPagesSQL($whereSQL)
   {
     # Purge any text belonging to deleted pages
@@ -89,6 +132,10 @@ class MWPurge_1_16 extends MWPurge {
     $this->dbw->delete('archive',array($whereSQL));
   }
   
+  /*
+   * Purge users and all related stuff
+   * @param $whereSQL string of the WHERE clause to select from the user table
+   */
   public function purgeUsersSQL($whereSQL)
   {
     $userRows = $this->dbw->select('user',array('user_id'), array($whereSQL));
@@ -102,6 +149,10 @@ class MWPurge_1_16 extends MWPurge {
     $this->doPurgeUsers($userIDs, $userNames);
   }
   
+  /*
+   * Purge users and all related stuff
+   * @param $userIDs array of user ids to purge
+   */
   public function purgeUsers($userIDs)
   {
     $userNames = array();
@@ -113,6 +164,11 @@ class MWPurge_1_16 extends MWPurge {
     $this->doPurgeUsers($userIDs, $userNames);
   }
   
+  /*
+   * Do the actual purge of users and all related stuff
+   * @param $userIDs array of user ids to purge
+   * @param $userNames array of user names to purge (corresponding with $userIDs)
+   */
   protected function doPurgeUsers($userIDs, $userNames)
   {
     if(count($userIDs) == 0)
@@ -140,6 +196,10 @@ class MWPurge_1_16 extends MWPurge {
     $this->purgeRevisionsByUser($userIDs_list);
   }
   
+  /*
+   * Purge images, their actual files, thumbnails, their old versions and their pages
+   * @param $whereSQL string of the WHERE clause to select from the image table
+   */
   public function purgeImagesSQL($whereSQL)
   { 
     # Purge files of any images
@@ -177,6 +237,10 @@ class MWPurge_1_16 extends MWPurge {
     $this->purgePagesSQL("page_title IN ($imageNames_list) AND page_namespace=$this->nsFile");
   }
   
+  /*
+   * Purge an old version of a file upload and its actual file
+   * @param $oi_sha1 SHA1 of the file to purge
+   */
   function purgeOldImagesSQL($whereSQL) 
   { 
     # Purge files of old version of any images uploaded by this user
@@ -209,6 +273,10 @@ class MWPurge_1_16 extends MWPurge {
     $this->dbw->deleteJoin('oldimage','image','oi_name','img_name',array($whereSQL));
   }
   
+  /*
+   * Purge deleted file uploads and their archived files
+   * @param $whereSQL string of the WHERE clause to select from the filearchive table
+   */
   function purgeArchivedFilesSQL($whereSQL)
   { 
     # Purge files of archived images

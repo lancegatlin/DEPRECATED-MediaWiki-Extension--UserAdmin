@@ -14,7 +14,7 @@
  * @ingroup Extensions
  * @link http://www.mediawiki.org/wiki/Extension:UserAdmin   Documentation
  * @author Lance Gatlin <lance.gatlin@gmail.com>
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @license http://opensource.org/licenses/gpl-3.0.html GNU Public License 3.0
  * @version 0.9.0
 */
 
@@ -302,7 +302,6 @@ EOT;
         throw new InvalidPOSTParamException(wfMsg('uadm-formsubmissionerrormsg'));
       case 'emailwelcomepreview' :
         $this->pwdaction = 'emailwelcome';
-        $this->validatePOSTParams();
         $newParams = array('preview' => 'welcome' ) + $this->mParams;
         $newParams = array_intersect_key($newParams, $this->getParamsGET());
         return $this->getURL($newParams);

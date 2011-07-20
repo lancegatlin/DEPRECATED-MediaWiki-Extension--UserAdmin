@@ -14,7 +14,7 @@
  * @ingroup Extensions
  * @link http://www.mediawiki.org/wiki/Extension:UserAdmin   Documentation
  * @author Lance Gatlin <lance.gatlin@gmail.com>
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @license http://opensource.org/licenses/gpl-3.0.html GNU Public License 3.0
  * @version 0.9.0
 */
 
@@ -181,7 +181,7 @@ EOT;
     $editToken = $wgUser->editToken('purgeuser' . $wgUser->getName());
 
     return <<<EOT
-<h2 class="visualClear">$this->confirmpurgewarningmsg</h2>
+<div class="errorbox visualClear">$this->confirmpurgewarningmsg</div>
 <form name="input" action="$this->mURL" method="post" class="visualClear">
   <input type="hidden" name="edittoken" value="$editToken"/>
   <input type="hidden" name="returnto" value="$this->returnto"/>
