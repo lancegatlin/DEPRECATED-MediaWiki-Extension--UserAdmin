@@ -295,7 +295,19 @@ EOT;
     $domainHTML = '';
     $template = new UsercreateTemplate;
     $temp = 'signup';
-    $wgAuth->modifyUITemplate(&$template, &$temp);
+    // Bug fix. This does nothing.
+    $wgAuth->autoCreate(); 
+    // The first time wgAuth is called, some PHP auto-magic involving StubObject
+    // occurs to "unstub" wgAuth AND call the function invoked. If the below
+    // call is made as written, the call is actually made by calling 
+    // call_user_func_array and the arguments are passed by value even though
+    // the modifyUITemplate expects them to be by reference.
+    // This use to be a non issue since call-time pass-by-reference was allowed
+    // $wgAuth->modifyUITemplate(&$template, &$temp); 
+    // This generates warnings now. Solution is to perform a no-op call to
+    // wgAuth to "unstub" it so that the below call will be made directly and
+    // not by call_user_func_array
+    $wgAuth->modifyUITemplate($template, $temp);
     if(isset($template->data['usedomain']) && $template->data['usedomain'] == true)
     {
       $domainHTML = <<<EOT
