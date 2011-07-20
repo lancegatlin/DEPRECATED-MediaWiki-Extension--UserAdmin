@@ -472,8 +472,6 @@ EOT;
   {
     global $wgUser, $wgAuth;
 
-    $user = $this->validatePOSTParams();
-    
     switch($this->action)
     {
       case 'emailpwdpreview' :
@@ -485,6 +483,8 @@ EOT;
       case 'saveuser' :
         break;
     }
+
+    $user = $this->validatePOSTParams();
     
     $log = new LogPage( 'rights' );
     $changesMade = false;
