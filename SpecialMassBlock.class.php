@@ -1,10 +1,10 @@
 <?php
 
 /**
- * UserAdmin is a MediaWiki extension which allows administrators to add users, 
- * permanently remove spam or unused accounts, change user passwords, edit user 
- * details, send reset password or welcome emails and list users with pagination 
- * and filter controls. This extension is primarily for administrators of 
+ * UserAdmin is a MediaWiki extension which allows administrators to add users,
+ * permanently remove spam or unused accounts, change user passwords, edit user
+ * details, send reset password or welcome emails and list users with pagination
+ * and filter controls. This extension is primarily for administrators of
  * private wikis that require tighter control of user accounts.
  *
  * Usage:
@@ -29,7 +29,7 @@ class SpecialMassBlock extends SpecialUADMBase {
 
   /*
    * Get the parameters and their default values for a GET
-   * 
+   *
    * @return array key-value parameters with default value
    */
   function getParamsGET()
@@ -42,10 +42,10 @@ class SpecialMassBlock extends SpecialUADMBase {
       'returnto' => $this->getDefaultReturnTo(),
     );
   }
-  
+
   /*
    * Get the parameters and their default values for a POST
-   * 
+   *
    * @return array key-value parameters with default value
    */
   function getParamsPOST()
@@ -64,10 +64,10 @@ class SpecialMassBlock extends SpecialUADMBase {
     );
   }
 
-  
+
   /*
    * Helper function to validate get parameters; throws on invalid
-   * 
+   *
    * @return array of users requested for deletion
    */
   function validateGETParams()
@@ -78,9 +78,9 @@ class SpecialMassBlock extends SpecialUADMBase {
       if(!is_object($title) || !$title->isKnown())
         $this->returnto = $this->mDefaultParams['returnto'];
     }
-    
+
     $users = array();
-    
+
     if(!empty($this->userid))
     {
       $user = User::newFromId($this->userid);
@@ -88,10 +88,10 @@ class SpecialMassBlock extends SpecialUADMBase {
         throw new InvalidGETParamException(wfMsg('uadm-invaliduseridmsg',$this->userid), $this->copyParamsAndRemoveBadParam('userid'));
       if($this->isAdminUser($user))
           throw new InvalidGETParamException(wfMsg('uadm-nodeleteadminmsg',$user->getName()), $this->copyParamsAndRemoveBadParam('userid'));
-            
+
       $users[] = $user;
     }
-    
+
     if(!empty($this->subpage))
     {
       $user = User::newFromName($this->subpage);
@@ -101,18 +101,18 @@ class SpecialMassBlock extends SpecialUADMBase {
           throw new InvalidGETParamException(wfMsg('uadm-nodeleteadminmsg', $user->getName()), $this->copyParamsAndRemoveBadParam('subpage'));
       $users[] = $user;
     }
-    
+
     if(!empty($this->username))
     {
       $user = User::newFromName($this->username);
       if(!is_object($user) || $user->getId() == 0)
         throw new InvalidGETParamException(wfMsg('uadm-usernoexistmsg', $this->username), $this->copyParamsAndRemoveBadParam('username'));
-      
+
       if($this->isAdminUser($user))
         throw new InvalidGETParamException(wfMsg('uadm-nodeleteadminmsg', $this->username), $this->copyParamsAndRemoveBadParam('username'));
       $users[] = $user;
     }
-    
+
     if(count($this->userids) > 0)
     {
       $adminUserIDs = array();
@@ -123,11 +123,11 @@ class SpecialMassBlock extends SpecialUADMBase {
           throw new InvalidGETParamException(wfMsg('uadm-invaliduseridmsg',$userid), $this->copyParamsAndRemoveBadArrayValue('userids', $userid));
         if($this->isAdminUser($user))
           throw new InvalidGETParamException(wfMsg('uadm-nodeleteadminmsg', $user->getName()), $this->copyParamsAndRemoveBadArrayValue('userids', $userid));
-        
+
         $users[] = $user;
       }
     }
-    
+
     if(!count($this->usernames))
     {
       $adminUserIDs = array();
@@ -138,26 +138,26 @@ class SpecialMassBlock extends SpecialUADMBase {
           throw new InvalidGETParamException(wfMsg('uadm-usernoexistmsg', $username), $this->copyParamsAndRemoveBadArrayValue('usernames', $username));
         if($this->isAdminUser($user))
           throw new InvalidGETParamException(wfMsg('uadm-nodeleteadminmsg', $username), $this->copyParamsAndRemoveBadArrayValue('usernames', $username));
-                
+
         $users[] = $user;
       }
     }
-    
+
     return $users;
   }
-  
+
   function doGET()
   {
     global $wgUser;
-    
+
     $users = $this->validateGETParams();
 
     $returnToHTML = '';
     if(!empty($this->returnto))
       $returnToHTML = self::parse(wfMsg('uadm-returntomsg', $this->returnto));
-    
+
     $searchFormHTML = $this->getSearchFormHTML(wfMsg('uadm-deleteauserlabel'));
-            
+
     if(count($users) == 0)
       return <<<EOT
 $searchFormHTML
@@ -167,7 +167,7 @@ EOT;
     $userRowsHTML = '';
     foreach ($users as $user)
       $userRowsHTML .= $this->getUserRowHTML($user);
-    
+
     $idfieldHTML = $this->useridfield;
     $userNamefieldHTML = $this->usernamefield;
     $realNamefieldHTML = $this->realnamefield;
@@ -227,21 +227,19 @@ EOT;
 
   /*
    * Get the HTML for a user row in the table
-   * 
+   *
    * @return String: HTML of user row
   */
   function getUserRowHTML($user)
   {
     global $wgLang;
-    
-    $user->loadGroups();
 
     $id = $user->getId();
     $userName = $user->getName();
     $realName = $user->getRealName();
     $email = $user->getEmail();
     $emailHTML = strlen($email) > 0 ? "<a href=\"mailto:$email\">$email</a>" : '';
-    
+
     $groups = array_diff($user->getEffectiveGroups(), $user->getImplicitGroups());
     $groupsHTML = '';
     foreach ($groups as $group)
@@ -265,7 +263,7 @@ EOT;
     $editHref = $this->getSpecialPageURL('EditUser',$userName, array('returnto' => $this->getTitle()->getPrefixedText()));
     $contribsHref = $this->getSpecialPageURL('Contributions',$userName);
     $logsHref = $this->getSpecialPageURL('Log',$userName);
-    
+
     return <<<EOT
 <tr>
     <td><input type="checkbox" name="userids[]" value="$id" checked/></td>
@@ -281,22 +279,22 @@ EOT;
 </tr>
 EOT;
   }
-  
+
   /*
    * Helper function to validate get parameters; throws on invalid
-   * 
+   *
    * @return array of users requested for deletion
    */
   function validatePOSTParams()
   {
     global $wgUser;
-    
+
     if(!$wgUser->matchEditToken($this->edittoken, 'deleteuser' . $wgUser->getName()))
       throw new InvalidPOSTParamException(wfMsg('uadm-formsubmissionerrormsg'));
-    
+
     if(empty($this->reason))
       throw new InvalidPOSTParamException(wfMsg('uadm-fieldisrequiredmsg',$this->reasonfield));
-    
+
     if(!empty($this->returnto))
     {
       $title = Title::newFromText($this->returnto);
@@ -307,9 +305,9 @@ EOT;
         $this->returnto = $title->getPrefixedText();
       }
     }
-    
+
     $users = array();
-    
+
     if(!empty($this->userid))
     {
       $user = User::newFromId($this->userid);
@@ -317,10 +315,10 @@ EOT;
         throw new InvalidPOSTParamException(wfMsg('uadm-invaliduseridmsg',$this->userid));
       if($this->isAdminUser($user))
           throw new InvalidPOSTParamException(wfMsg('uadm-nodeleteadminmsg',$user->getName()));
-            
+
       $users[] = $user;
     }
-    
+
     if(!empty($this->subpage))
     {
       $user = User::newFromName($this->subpage);
@@ -330,18 +328,18 @@ EOT;
           throw new InvalidPOSTParamException(wfMsg('uadm-nodeleteadminmsg', $user->getName()));
       $users[] = $user;
     }
-    
+
     if(!empty($this->username))
     {
       $user = User::newFromName($this->username);
       if(!is_object($user) || $user->getId() == 0)
         throw new InvalidPOSTParamException(wfMsg('uadm-usernoexistmsg', $this->username));
-      
+
       if($this->isAdminUser($user))
         throw new InvalidPOSTParamException(wfMsg('uadm-nodeleteadminmsg', $this->username));
       $users[] = $user;
     }
-    
+
     if(count($this->userids) > 0)
     {
       $adminUserIDs = array();
@@ -352,11 +350,11 @@ EOT;
           throw new InvalidPOSTParamException(wfMsg('uadm-invaliduseridmsg',$userid));
         if($this->isAdminUser($user))
           throw new InvalidPOSTParamException(wfMsg('uadm-nodeleteadminmsg', $user->getName()));
-        
+
         $users[] = $user;
       }
     }
-    
+
     if(!count($this->usernames))
     {
       $adminUserIDs = array();
@@ -367,18 +365,18 @@ EOT;
           throw new InvalidPOSTParamException(wfMsg('uadm-usernoexistmsg', $username));
         if($this->isAdminUser($user))
           throw new InvalidPOSTParamException(wfMsg('uadm-nodeleteadminmsg', $username));
-                
+
         $users[] = $user;
       }
     }
-    
+
     return $users;
   }
-  
+
   function doPOST()
   {
     global $wgVersion, $wgUser;
-    
+
     switch($this->action)
     {
       default :
@@ -386,11 +384,11 @@ EOT;
       case 'confirmdelete' :
         break;
     }
-    
+
     $users = $this->validatePOSTParams();
-    
+
     list($versionMajor, $versionMinor, $versionRev) = explode('.', $wgVersion);
-    
+
     switch($versionMajor)
     {
       case 1:
@@ -398,7 +396,7 @@ EOT;
       default:
   			return $this->getPOSTRedirectURL( false, wfMsg( 'uadm-unsupportedversionmsg', $abortError) );
 	  }
-    
+
     switch($versionMinor)
     {
       case 16 :
@@ -407,17 +405,17 @@ EOT;
       default:
   			return $this->getPOSTRedirectURL( false, wfMsg( 'uadm-unsupportedversionmsg', $abortError) );
     }
-    
+
     foreach($users as $user)
     {
       $usersMassBlockd[] = $user->getName();
       $this->$deleteUser($user);
     }
     $usersMassBlockd = implode(',', $usersMassBlockd);
-    
-    
+
+
     $log = new LogPage( 'rights' );
-    $log->addEntry( 
+    $log->addEntry(
       'uadm-usersdeletedlog',
       $wgUser->getUserPage(),
       $this->reason,
@@ -426,21 +424,21 @@ EOT;
 
     return $this->getURLWithStatus (array('returnto' => $this->returnto), true, wfMsg('uadm-deletesuccessmsg'));
   }
-  
+
   function deleteUserVersion1_16($user)
   {
     $id = $user->getId();
-    
+
     $dbr = wfGetDB(DB_SLAVE);
-    
+
     # Purge user
     # lance.gatlin@gmail.com: tested good 9Jul11
     $dbr->delete('user',array('user_id' => $id));
-    
+
     # Purge properties for this user
     # lance.gatlin@gmail.com: tested good 9Jul11
     $dbr->delete('user_properties',array('up_user' => $id));
-    
+
     # Purge any text belonging to deleted pages created by this user
     # lance.gatlin@gmail.com: tested good 9Jul11
     $dbr->deleteJoin('text', 'archive','old_id', 'ar_text_id', array('ar_user'=> $id));
@@ -455,7 +453,7 @@ EOT;
     # Zero id for any images deleted by user
     # NOT TESTED
     $dbr->update('filearchive', array( 'fa_deleted_user' => 0),array('fa_deleted_user' => $id));
-    
+
 
     # Purge *all* old version of any images created by this user
     // TODO: delete images from file system
@@ -471,23 +469,23 @@ EOT;
     # lance.gatlin@gmail.com: tested good 9Jul11
 //    $usersImageCount = $dbr->estimateRowCount('image',array('img_user' => $id));
     $dbr->delete('image',array('img_user' => $id));
-    
+
     # Zero id of any blocks on this user (preserve any specific IP blocks)
     # lance.gatlin@gmail.com: tested good 9Jul11
     $dbr->update('ipblocks', array( 'ipb_user' => 0),array('ipb_user' => $id));
-    
+
     # Zero id for any log entries for this user
     # lance.gatlin@gmail.com: tested good 9Jul11
     $dbr->update('logging', array( 'log_user' => 0),array('log_user' => $id));
-        
+
     # Purge any recent change entries for this user
     # lance.gatlin@gmail.com: tested good 9Jul11
     $dbr->delete('recentchanges',array('rc_user' => $id));
-    
+
     # Purge any text belonging to revisions created by this user
     # lance.gatlin@gmail.com: tested good 9Jul11
     $dbr->deleteJoin('text', 'revision','old_id', 'rev_text_id', array('rev_user' => $id));
-    
+
 
     # Purge any revisions created by this user
     # Get all revision by the user
@@ -507,11 +505,11 @@ EOT;
     $pagesEditedByUser = array_unique($pagesEditedByUser);
     $pagesEditedByUser = implode(',',$pagesEditedByUser);
 //    $usersPageCount = 0;
-    
+
     # MassBlock all revisions by this user
     # lance.gatlin@gmail.com: tested good 9Jul11
     $dbr->delete('revision',array('rev_user' => $id));
-    
+
     # Purge any pages the user has revisions for that now have no revisions
     # lance.gatlin@gmail.com: tested good 9Jul11
     if(strlen($pagesEditedByUser)> 0)
@@ -528,9 +526,9 @@ EOT;
     # Purge any newtalk entries for this user
     # lance.gatlin@gmail.com: tested good 9Jul11
     $dbr->delete('user_newtalk',array('user_id'=>$id));
-    
+
     # Purge any watchlist entries for this user
     # lance.gatlin@gmail.com: tested good 9Jul11
-    $dbr->delete('watchlist',array('wl_user' => $id));   
+    $dbr->delete('watchlist',array('wl_user' => $id));
   }
 }

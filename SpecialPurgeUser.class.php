@@ -1,10 +1,10 @@
 <?php
 
 /**
- * UserAdmin is a MediaWiki extension which allows administrators to add users, 
- * permanently remove spam or unused accounts, change user passwords, edit user 
- * details, send reset password or welcome emails and list users with pagination 
- * and filter controls. This extension is primarily for administrators of 
+ * UserAdmin is a MediaWiki extension which allows administrators to add users,
+ * permanently remove spam or unused accounts, change user passwords, edit user
+ * details, send reset password or welcome emails and list users with pagination
+ * and filter controls. This extension is primarily for administrators of
  * private wikis that require tighter control of user accounts.
  *
  * Usage:
@@ -29,7 +29,7 @@ class SpecialPurgeUser extends SpecialUADMBase {
 
   /*
    * Get the parameters and their default values for a GET
-   * 
+   *
    * @return array key-value parameters with default value
    */
   function getParamsGET()
@@ -42,10 +42,10 @@ class SpecialPurgeUser extends SpecialUADMBase {
       'returnto' => $this->getDefaultReturnTo(),
     );
   }
-  
+
   /*
    * Get the parameters and their default values for a POST
-   * 
+   *
    * @return array key-value parameters with default value
    */
   function getParamsPOST()
@@ -64,10 +64,10 @@ class SpecialPurgeUser extends SpecialUADMBase {
     );
   }
 
-  
+
   /*
    * Helper function to validate get parameters; throws on invalid
-   * 
+   *
    * @return array of users requested for purging
    */
   function validateGETParams()
@@ -78,9 +78,9 @@ class SpecialPurgeUser extends SpecialUADMBase {
       if(!is_object($title) || !$title->isKnown())
         $this->returnto = $this->mDefaultParams['returnto'];
     }
-    
+
     $users = array();
-    
+
     if(!empty($this->userid))
     {
       $user = User::newFromId($this->userid);
@@ -88,10 +88,10 @@ class SpecialPurgeUser extends SpecialUADMBase {
         throw new InvalidGETParamException(wfMsg('uadm-invaliduseridmsg',$this->userid), $this->copyParamsAndRemoveBadParam('userid'));
       if($this->isAdminUser($user))
           throw new InvalidGETParamException(wfMsg('uadm-nopurgeadminmsg',$user->getName()), $this->copyParamsAndRemoveBadParam('userid'));
-            
+
       $users[] = $user;
     }
-    
+
     if(!empty($this->subpage))
     {
       $user = User::newFromName($this->subpage);
@@ -101,18 +101,18 @@ class SpecialPurgeUser extends SpecialUADMBase {
           throw new InvalidGETParamException(wfMsg('uadm-nopurgeadminmsg', $user->getName()), $this->copyParamsAndRemoveBadParam('subpage'));
       $users[] = $user;
     }
-    
+
     if(!empty($this->username))
     {
       $user = User::newFromName($this->username);
       if(!is_object($user) || $user->getId() == 0)
         throw new InvalidGETParamException(wfMsg('uadm-usernoexistmsg', $this->username), $this->copyParamsAndRemoveBadParam('username'));
-      
+
       if($this->isAdminUser($user))
         throw new InvalidGETParamException(wfMsg('uadm-nopurgeadminmsg', $this->username), $this->copyParamsAndRemoveBadParam('username'));
       $users[] = $user;
     }
-    
+
     if(count($this->userids) > 0)
     {
       $adminUserIDs = array();
@@ -123,11 +123,11 @@ class SpecialPurgeUser extends SpecialUADMBase {
           throw new InvalidGETParamException(wfMsg('uadm-invaliduseridmsg',$userid), $this->copyParamsAndRemoveBadArrayValue('userids', $userid));
         if($this->isAdminUser($user))
           throw new InvalidGETParamException(wfMsg('uadm-nopurgeadminmsg', $user->getName()), $this->copyParamsAndRemoveBadArrayValue('userids', $userid));
-        
+
         $users[] = $user;
       }
     }
-    
+
     if(!count($this->usernames))
     {
       $adminUserIDs = array();
@@ -138,26 +138,26 @@ class SpecialPurgeUser extends SpecialUADMBase {
           throw new InvalidGETParamException(wfMsg('uadm-usernoexistmsg', $username), $this->copyParamsAndRemoveBadArrayValue('usernames', $username));
         if($this->isAdminUser($user))
           throw new InvalidGETParamException(wfMsg('uadm-nopurgeadminmsg', $username), $this->copyParamsAndRemoveBadArrayValue('usernames', $username));
-                
+
         $users[] = $user;
       }
     }
-    
+
     return $users;
   }
-  
+
   function doGET()
   {
     global $wgUser;
-    
+
     $users = $this->validateGETParams();
 
     $returnToHTML = '';
     if(!empty($this->returnto))
       $returnToHTML = self::parse(wfMsg('uadm-returntomsg', $this->returnto));
-    
+
     $searchFormHTML = $this->getSearchFormHTML(wfMsg('uadm-purgeauserlabel'));
-            
+
     if(count($users) == 0)
       return <<<EOT
 $searchFormHTML
@@ -167,7 +167,7 @@ EOT;
     $userRowsHTML = '';
     foreach ($users as $user)
       $userRowsHTML .= $this->getUserRowHTML($user);
-    
+
     $idfieldHTML = $this->useridfield;
     $userNamefieldHTML = $this->usernamefield;
     $realNamefieldHTML = $this->realnamefield;
@@ -210,21 +210,19 @@ EOT;
 
   /*
    * Get the HTML for a user row in the table
-   * 
+   *
    * @return String: HTML of user row
   */
   function getUserRowHTML($user)
   {
     global $wgLang;
-    
-    $user->loadGroups();
 
     $id = $user->getId();
     $userName = $user->getName();
     $realName = $user->getRealName();
     $email = $user->getEmail();
     $emailHTML = strlen($email) > 0 ? "<a href=\"mailto:$email\">$email</a>" : '';
-    
+
     $groups = array_diff($user->getEffectiveGroups(), $user->getImplicitGroups());
     $groupsHTML = '';
     foreach ($groups as $group)
@@ -248,7 +246,7 @@ EOT;
     $editHref = $this->getSpecialPageURL('EditUser',$userName, array('returnto' => $this->getTitle()->getPrefixedText()));
     $contribsHref = $this->getSpecialPageURL('Contributions',$userName);
     $logsHref = $this->getSpecialPageURL('Log',$userName);
-    
+
     return <<<EOT
 <tr>
     <td><input type="checkbox" name="userids[]" value="$id" checked/></td>
@@ -264,22 +262,22 @@ EOT;
 </tr>
 EOT;
   }
-  
+
   /*
    * Helper function to validate get parameters; throws on invalid
-   * 
+   *
    * @return array of users requested for deletion
    */
   function validatePOSTParams()
   {
     global $wgUser;
-    
+
     if(!$wgUser->matchEditToken($this->edittoken, 'purgeuser' . $wgUser->getName()))
       throw new InvalidPOSTParamException(wfMsg('uadm-formsubmissionerrormsg'));
-    
+
     if(empty($this->reason))
       throw new InvalidPOSTParamException(wfMsg('uadm-fieldisrequiredmsg',$this->reasonfield));
-    
+
     if(!empty($this->returnto))
     {
       $title = Title::newFromText($this->returnto);
@@ -290,9 +288,9 @@ EOT;
         $this->returnto = $title->getPrefixedText();
       }
     }
-    
+
     $users = array();
-    
+
     if(!empty($this->userid))
     {
       $user = User::newFromId($this->userid);
@@ -300,10 +298,10 @@ EOT;
         throw new InvalidPOSTParamException(wfMsg('uadm-invaliduseridmsg',$this->userid));
       if($this->isAdminUser($user))
           throw new InvalidPOSTParamException(wfMsg('uadm-nopurgeadminmsg',$user->getName()));
-            
+
       $users[] = $user;
     }
-    
+
     if(!empty($this->subpage))
     {
       $user = User::newFromName($this->subpage);
@@ -313,18 +311,18 @@ EOT;
           throw new InvalidPOSTParamException(wfMsg('uadm-nopurgeadminmsg', $user->getName()));
       $users[] = $user;
     }
-    
+
     if(!empty($this->username))
     {
       $user = User::newFromName($this->username);
       if(!is_object($user) || $user->getId() == 0)
         throw new InvalidPOSTParamException(wfMsg('uadm-usernoexistmsg', $this->username));
-      
+
       if($this->isAdminUser($user))
         throw new InvalidPOSTParamException(wfMsg('uadm-nopurgeadminmsg', $this->username));
       $users[] = $user;
     }
-    
+
     if(count($this->userids) > 0)
     {
       $adminUserIDs = array();
@@ -335,11 +333,11 @@ EOT;
           throw new InvalidPOSTParamException(wfMsg('uadm-invaliduseridmsg',$userid));
         if($this->isAdminUser($user))
           throw new InvalidPOSTParamException(wfMsg('uadm-nopurgeadminmsg', $user->getName()));
-        
+
         $users[] = $user;
       }
     }
-    
+
     if(!count($this->usernames))
     {
       $adminUserIDs = array();
@@ -350,18 +348,18 @@ EOT;
           throw new InvalidPOSTParamException(wfMsg('uadm-usernoexistmsg', $username));
         if($this->isAdminUser($user))
           throw new InvalidPOSTParamException(wfMsg('uadm-nopurgeadminmsg', $username));
-                
+
         $users[] = $user;
       }
     }
-    
+
     return $users;
   }
-  
+
   function doPOST()
   {
     global $wgVersion, $wgUser;
-    
+
     switch($this->action)
     {
       default :
@@ -369,11 +367,11 @@ EOT;
       case 'confirmpurge' :
         break;
     }
-    
+
     $users = $this->validatePOSTParams();
-    
+
     list($versionMajor, $versionMinor, $versionRev) = explode('.', $wgVersion);
-    
+
     switch($versionMajor)
     {
       case 1:
@@ -381,7 +379,7 @@ EOT;
       default:
   			return $this->getPOSTRedirectURL( false, wfMsg( 'uadm-unsupportedversionmsg', $abortError) );
 	  }
-    
+
     switch($versionMinor)
     {
       case 16 :
@@ -390,18 +388,18 @@ EOT;
       default:
   			return $this->getPOSTRedirectURL( false, wfMsg( 'uadm-unsupportedversionmsg', $abortError) );
     }
-    
+
     foreach($users as $user)
     {
       $userIDs[] = $user->getId();
       $usersPurged[] = $user->getName();
     }
     $usersPurged = implode(',', $usersPurged);
-    
+
     $purge->purgeUsers($userIDs);
-    
+
     $log = new LogPage( 'rights' );
-    $log->addEntry( 
+    $log->addEntry(
       'uadm-userspurgedlog',
       $wgUser->getUserPage(),
       $this->reason,
@@ -410,5 +408,5 @@ EOT;
 
     return $this->getURLWithStatus (array('returnto' => $this->returnto), true, wfMsg('uadm-purgesuccessmsg'));
   }
-  
+
 }
