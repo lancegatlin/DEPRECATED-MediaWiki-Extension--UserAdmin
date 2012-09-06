@@ -527,8 +527,6 @@ EOT;
    */
   function isAdminUser($user)
   {
-    $user->loadGroups();
-    
     foreach($user->getGroups() as $groupName)
       if($groupName == 'sysop')
         return true;
