@@ -1,10 +1,10 @@
 <?php
 
 /**
- * UserAdmin is a MediaWiki extension which allows administrators to add users, 
- * permanently remove spam or unused accounts, change user passwords, edit user 
- * details, send reset password or welcome emails and list users with pagination 
- * and filter controls. This extension is primarily for administrators of 
+ * UserAdmin is a MediaWiki extension which allows administrators to add users,
+ * permanently remove spam or unused accounts, change user passwords, edit user
+ * details, send reset password or welcome emails and list users with pagination
+ * and filter controls. This extension is primarily for administrators of
  * private wikis that require tighter control of user accounts.
  *
  * Usage:
@@ -22,10 +22,10 @@
  * Special page for user admin panel
  */
 class SpecialUserAdminPanel extends SpecialUADMBase {
-  
+
     // look up to convert displayed field name to database field name
     // keys are localized in constructor
-    var $mLookupUserField = array( 
+    var $mLookupUserField = array(
       'uadm-useridfield' => 'user_id',
       'uadm-usernamefield' => 'user_name',
       'uadm-realnamefield' => 'user_real_name',
@@ -38,25 +38,25 @@ class SpecialUserAdminPanel extends SpecialUADMBase {
   var $mFilterOps = array ('=','<','>','<=','>=','LIKE'); // filter operations
    // lookup for logical opposite of a filter operation
   var $mNegFilterOps = array ( '!=', '>=', '<=', '>', '<', 'NOT LIKE' );
-  
+
   var $mPageSizes = array('25','50','100','all'); // pagination sizes
   var $mFields = array (); // array of displayed field names
-  
+
   function __construct() {
     parent::__construct('UserAdmin', 'createaccount');
-    
+
     // Localize look up field values
     foreach($this->mLookupUserField as $key => $value)
       $tmp[wfMsg($key)] = $value;
     $this->mLookupUserField = $tmp;
-    
+
     // Set field names to keys of lookup array
     $this->mFields = array_keys($this->mLookupUserField);
   }
-  
+
   /*
    * Get the parameters and their default values for a GET
-   * 
+   *
    * @return array key-value parameters with default value
    */
   function getParamsGET()
@@ -74,17 +74,17 @@ class SpecialUserAdminPanel extends SpecialUADMBase {
         'userids' => array(),
         'usernames' => array(),
         'returnto' => $this->getDefaultReturnTo(),
-        
+
     );
     $retv['filterby'] = wfMsg('uadm-usernamefield');
     $retv['sortby'] = wfMsg('uadm-useridfield');
-    
+
     return $retv;
   }
-  
+
   /*
    * Get the parameters and their default values for a POST
-   * 
+   *
    * @return array key-value parameters with default value
    */
   function getParamsPOST()
@@ -94,22 +94,22 @@ class SpecialUserAdminPanel extends SpecialUADMBase {
         'userids' => array(),
     );
   }
-  
+
   /*
    * Helper function to validate POST parameters
   */
   function validatePOSTParams()
   {
-    
+
   }
-  
+
   /*
    * Add a new user according to the POST parameters OR redirect for preview
-   * 
+   *
    * @return string URL to redirect to
    */
   function doPOST() {
-    switch($this->action)    
+    switch($this->action)
     {
       case 'newuser' :
         return $this->getSpecialPageURL('AddUser', '', array('returnto' => $this->getTitle()->getPrefixedText()));
@@ -118,7 +118,7 @@ class SpecialUserAdminPanel extends SpecialUADMBase {
     }
     return __FUNCTION__;
   }
-  
+
   /*
    * Helper function to validate GET parameters
   */
@@ -126,16 +126,16 @@ class SpecialUserAdminPanel extends SpecialUADMBase {
   {
     if(filter_var($this->pagenum, FILTER_VALIDATE_INT, array('options' => array('min_range' => 1))) === false)
       $this->pagenum = $this->mParamsGET['pagenum'];
-    
+
     if(!in_array($this->pagesize, $this->mPageSizes))
       $this->pagesize = $this->mParamsGET['pagesize'];
-    
+
     if(!in_array($this->filterby, $this->mFields))
       $this->filterby = $this->mParamsGET['filterby'];
-    
+
     if(!in_array($this->sortby, $this->mFields))
       $this->sortby = $this->mParamsGET['sortby'];
-    
+
     if($this->sortasc != '0' && $this->sortasc != '1')
       $this->sortasc = $this->mParamsGET['sortasc'];
 
@@ -143,10 +143,10 @@ class SpecialUserAdminPanel extends SpecialUADMBase {
       $this->filterop = 0;
 //    if(!in_array($this->filterop, $this->mFilterOps))
 //      $this->filterop = $this->mParamsGET['filterop'];
-    
+
     if($this->filterneg != '0' && $this->filterneg != '1')
       $this->filterneg = $this->mParamsGET['filterneg'];
-    
+
     if($this->filterby == $this->createddatefield || $this->filterby==$this->usertoucheddatefield)
     {
       $result = strtotime($this->filtertext);
@@ -158,25 +158,25 @@ class SpecialUserAdminPanel extends SpecialUADMBase {
         $this->filtertext = wfTimestamp(TS_MW, $result);
     }
   }
-  
+
   /*
    * Display the add user form
-   * 
+   *
    * @return string HTML
    */
-  function doGET() 
+  function doGET()
   {
     global $wgOut;
-    
+
     $this->validateGETParams();
-    
+
     // Load the users from database according to pagination parameters
     list($MW_users, $estRowCount) = $this->getUsersFromDb();
-    
+
     $pageNavHTML = '';
     $pageSizerHTML = '';
     $pageSizerSpacerHTML = '';
-    
+
     // Only show pageNav if there are at least 25 entries and more than 1 page
     // Only show pageSizer if there at least 2 entries
     if ($estRowCount > 25) {
@@ -186,18 +186,18 @@ class SpecialUserAdminPanel extends SpecialUADMBase {
       $pageSizerHTML = $this->getPageSizerHTML();
       $pageSizerSpacerHTML .= "<br/><br/>";
     }
-    
+
     // Get the filter controls
     $filterControlsHTML = $this->getFilterControlsHTML();
-    
+
     // Get a link to to adding a new user
     $newuserHref = $this->getSpecialPageURL('AddUser', '', array('returnto' => $this->getTitle()->getPrefixedText()));
-    
+
     // Build the HTML for rows of users
     $userRowsHTML = '';
     foreach ($MW_users as $user)
       $userRowsHTML .= $this->getUserRowHTML($user);
-    
+
     // Build links for fields to allow sorting by that column, if clicked
     $idfieldHTML = $this->getSortfieldHTML($this->useridfield);
     $userNamefieldHTML = $this->getSortfieldHTML($this->usernamefield);
@@ -208,9 +208,9 @@ class SpecialUserAdminPanel extends SpecialUADMBase {
     $editcountfieldHTML = $this->getSortfieldHTML($this->editcountfield);
     $groupsfieldHTML = $this->groupsfield;
     $lastEditDatefieldHTML = $this->lasteditdatefield;
-    
+
     $wgOut->includeJQuery();
-    
+
     $allOrNoneScript = <<<EOT
 <script language="javascript" type="text/javascript">
 var allOrNoneToggle = true;
@@ -225,7 +225,7 @@ jQuery( document ).ready( function( $ ) {
 </script>
 EOT;
     $wgOut->addScript($allOrNoneScript);
-    
+
     return <<<EOT
 $pageNavHTML
 $pageSizerHTML
@@ -259,7 +259,7 @@ EOT;
 
   /*
    * For the supplied field, build a link to allow sorting by that column
-   * 
+   *
    * @param $field String: column name
    * @return String: HTML of column name link
    */
@@ -277,11 +277,11 @@ EOT;
     }
     return $idfieldHTML;
   }
-  
+
   /*
    * Load users from database according to pagination parameters
-   * 
-   * @return array tuple(UserArray,integer) array of Users and the total number 
+   *
+   * @return array tuple(UserArray,integer) array of Users and the total number
    * of rows (users) for calculating pagination
    */
   function getUsersFromDb()
@@ -293,21 +293,21 @@ EOT;
     $sqlConds = '';
     if (strlen($this->filtertext) > 0) {
       $sqlConds = $this->mLookupUserField[$this->filterby] . ' ';
-      
+
       if($this->filterneg)
         $sqlConds .= $this->mNegFilterOps[$this->filterop] . ' ';
       else
         $sqlConds .= $this->mFilterOps[$this->filterop] . ' ';
-      
+
       $sqlConds .= $dbr->addQuotes($this->filtertext);
     }
-    
+
     $result = $dbr->select('user', 'user_id', $sqlConds);
-    $estRowCount = $result->numRows();        
+    $estRowCount = $result->numRows();
 //    $estRowCount = $dbr->estimateRowCount('user', '*', $sqlConds);
-    
+
     // SQL LIMIT based on pagenum/pagesize
-    if ($this->pagesize != 'all') 
+    if ($this->pagesize != 'all')
     {
       $this->pagemax = intval($estRowCount / $this->pagesize) + 1;
       $this->pagenum = min($this->pagenum, $this->pagemax);
@@ -323,13 +323,13 @@ EOT;
       $sqlOptions['ORDER BY'] .= ' DESC';
 
     $MW_users = UserArray::newFromResult($dbr->select('user', '*', $sqlConds, 'DatabaseBase::select', $sqlOptions));
-    
+
     return array($MW_users, $estRowCount);
   }
-  
+
   /*
    * Get the HTML for the filter controls
-   * 
+   *
    * @return String: HTML of filter controls
   */
   function getFilterControlsHTML()
@@ -340,19 +340,19 @@ EOT;
       $selected = $this->filterby == $filterChoice ? 'selected' : '';
       $filterChoicesHTML .= "<option value=\"$filterChoice\" $selected>$filterChoice</option>";
     }
-    
+
     $nonDefaultParamsHTML = '';
-    foreach($this->getNonDefaultParams($this->mParams) as $key => $value) 
+    foreach($this->getNonDefaultParams($this->mParams) as $key => $value)
     {
       if ($key == 'filtertext' || $key == 'filterby' || $key == 'filterop' || $key == 'filterneg')
         continue;
 
       $nonDefaultParamsHTML .= "<input type=\"hidden\" name=\"$key\" value=\"$value\"/>";
     }
-    
+
     $filterNeg0Selected = $this->filterneg == false ? 'selected' : '';
     $filterNeg1Selected = $this->filterneg == true ? 'selected' : '';
-    
+
     $filterOpsHTML = '';
     $i = 0;
     foreach ($this->mFilterOps as $op)
@@ -361,7 +361,7 @@ EOT;
       $filterOpsHTML .= "<option value=\"$i\" $selected>$op</option>";
       $i++;
     }
-    
+
     return <<<EOT
 <form name="filterControl" action="$this->mURL" method="get">
    <label for="filterby">$this->filterbylabel:</label> <select id="filterby" name="filterby">$filterChoicesHTML</select>
@@ -373,24 +373,22 @@ EOT;
 </form>
 EOT;
   }
-  
+
   /*
    * Get the HTML for a user row in the table
-   * 
+   *
    * @return String: HTML of user row
   */
   function getUserRowHTML($user)
   {
     global $wgLang;
-    
-    $user->loadGroups();
 
     $id = $user->getId();
     $userName = $user->getName();
     $realName = $user->getRealName();
     $email = $user->getEmail();
     $emailHTML = strlen($email) > 0 ? "<a href=\"mailto:$email\">$email</a>" : '';
-    
+
     $groups = array_diff($user->getEffectiveGroups(), $user->getImplicitGroups());
     $groupsHTML = '';
     foreach ($groups as $group)
@@ -414,7 +412,7 @@ EOT;
     $editHref = $this->getSpecialPageURL('EditUser',$userName, array('returnto' => $this->getTitle()->getPrefixedText()));
     $contribsHref = $this->getSpecialPageURL('Contributions',$userName);
     $logsHref = $this->getSpecialPageURL('Log',$userName);
-    
+
     return <<<EOT
 <tr>
     <td><a href="$editHref">($this->editactionlabel</a> | <a href="$contribsHref">$this->contributionsactionlabel</a> | <a href="$logsHref">$this->logsactionlabel</a>)</td>
@@ -431,10 +429,10 @@ EOT;
 </tr>
 EOT;
   }
-  
+
   /*
    * Get the HTML for page navigation (Previous 1 2 3 Next)
-   * 
+   *
    * @return String: HTML of page navigation
   */
   function getPageNavHTML()
@@ -463,7 +461,7 @@ EOT;
 
   /*
    * Get the HTML for page sizer (25 50 100 all)
-   * 
+   *
    * @return String: HTML of page sizer
   */
   function getPageSizerHTML()
