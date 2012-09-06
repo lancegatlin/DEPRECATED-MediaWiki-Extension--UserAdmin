@@ -148,8 +148,6 @@ EOT;
     if(!empty($this->returnto))
       $searchFormHTML = '';
     
-    $user->loadGroups();
-
     $id = $user->getId();
     $this->userid = $id;
     $this->mParams['userid'] = $id;
@@ -621,7 +619,6 @@ EOT;
     }
     
     # Update groups if needed
-    $user->loadGroups();
     $currentGroups = $user->getGroups();
     $remove = array();
     $add = array();
