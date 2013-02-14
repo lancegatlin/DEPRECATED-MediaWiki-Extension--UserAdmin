@@ -104,13 +104,29 @@ class SpecialPurgeUser extends SpecialUADMBase {
 
     if(!empty($this->username))
     {
-      $user = User::newFromName($this->username);
-      if(!is_object($user) || $user->getId() == 0)
-        throw new InvalidGETParamException(wfMsg('uadm-usernoexistmsg', $this->username), $this->copyParamsAndRemoveBadParam('username'));
+    	if($this->username == "*") 
+    	{
+    		$dbr = wfGetDB(DB_SLAVE);
+    	   $uids = $dbr->select(array('user'),array('user_id'));
 
-      if($this->isAdminUser($user))
-        throw new InvalidGETParamException(wfMsg('uadm-nopurgeadminmsg', $this->username), $this->copyParamsAndRemoveBadParam('username'));
-      $users[] = $user;
+    		if($uids->numRows() != 0) 
+    		{
+	    		foreach($uids as $uid)
+	    		{
+			      $user = User::newFromId($uid->user_id);
+		         if(is_object($user) && !$this->isAdminUser($user)) 
+				     $users[] = $user;
+				}
+    		}
+    	} else {
+	    	$user = User::newFromName($this->username);
+	    	if(!is_object($user) || $user->getId() == 0)
+	    		throw new InvalidGETParamException(wfMsg('uadm-usernoexistmsg', $this->username), $this->copyParamsAndRemoveBadParam('username'));
+	    	
+	     if($this->isAdminUser($user))
+	    	 throw new InvalidGETParamException(wfMsg('uadm-nopurgeadminmsg', $this->username), $this->copyParamsAndRemoveBadParam('username'));
+	     $users[] = $user;
+      }
     }
 
     if(count($this->userids) > 0)
@@ -161,6 +177,7 @@ class SpecialPurgeUser extends SpecialUADMBase {
     if(count($users) == 0)
       return <<<EOT
 $searchFormHTML
+Note: you can use * to select all users.<br>
 $returnToHTML
 EOT;
 
@@ -383,6 +400,7 @@ EOT;
     switch($versionMinor)
     {
       case 16 :
+      case 19 :
         $purge = new MWPurge_1_16;
         break;
       default:
